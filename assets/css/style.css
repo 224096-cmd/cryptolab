@@ -1,0 +1,280 @@
+/* =====================================================================
+   CryptoLab — スタイルシート
+   デザインの考え方：「暗号解読の実験ノート」。方眼紙の上に、青ペンで
+   書き込み、解けたら赤ペンで印をつける――という学習ノートの見立て。
+   ===================================================================== */
+
+:root{
+  --paper:#fbfaf6;        /* 紙の色 */
+  --grid:#e7ecf5;         /* 方眼の線 */
+  --card:#ffffff;         /* カード背景 */
+  --frame:#d9dde8;        /* カードの枠線 */
+  --frame-strong:#c2c8d6;
+  --ink:#27303f;          /* 本文インク */
+  --faint:#6d7686;        /* 薄い文字 */
+  --fainter:#99a0ad;
+  --blue:#2b50c8;         /* 青ペン（基調） */
+  --blue-weak:#eef2fd;
+  --blue-mid:#dbe3fb;
+  --red:#c9372c;          /* 赤ペン（解読成功・添削） */
+  --red-weak:#fdeeec;
+  --ok:#1f7a4d;           /* 合格・一致 */
+  --ok-weak:#eaf6ef;
+  --amber:#9a6b00;        /* 注意 */
+  --amber-weak:#fbf3df;
+
+  --mincho:"Hiragino Mincho ProN","Yu Mincho","BIZ UDMincho","MS PMincho",serif;
+  --gothic:"Hiragino Kaku Gothic ProN","Hiragino Sans","BIZ UDPGothic","Yu Gothic",Meiryo,sans-serif;
+  --mono:ui-monospace,"Cascadia Mono","Cascadia Code",Consolas,"Courier New",monospace;
+
+  --radius:10px;
+  --maxw:860px;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%; scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} }
+
+body{
+  margin:0; color:var(--ink); font-family:var(--gothic); line-height:1.85;
+  background-color:var(--paper);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size:28px 28px;
+  min-height:100svh;
+  overflow-wrap:anywhere;
+}
+
+/* ---------- ヘッダー / ナビ ---------- */
+.site-header{
+  position:sticky; top:0; z-index:20;
+  background:rgba(251,250,246,.92); backdrop-filter:saturate(1.2) blur(6px);
+  border-bottom:1px solid var(--frame);
+}
+.site-header .bar{
+  max-width:var(--maxw); margin:0 auto; padding:10px 18px;
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+}
+.brand{display:flex; align-items:baseline; gap:10px; text-decoration:none; color:inherit}
+.brand .logo{
+  font-family:var(--mincho); font-weight:600; color:var(--blue); font-size:1.5rem;
+  letter-spacing:.01em; line-height:1;
+}
+.brand .sub{font-size:.74rem; color:var(--faint); letter-spacing:.02em}
+nav.main{display:flex; gap:2px; flex-wrap:wrap; margin-left:auto}
+nav.main a{
+  text-decoration:none; color:var(--faint); font-size:.86rem; font-weight:600;
+  padding:5px 10px; border-radius:6px; white-space:nowrap;
+}
+nav.main a:hover{color:var(--blue); background:var(--blue-weak)}
+nav.main a.active{color:var(--blue); background:var(--blue-weak); box-shadow:inset 0 -2px 0 var(--blue)}
+
+/* ---------- レイアウト ---------- */
+.wrap{max-width:var(--maxw); margin:0 auto; padding:34px 18px 90px}
+.view{animation:fade .25s ease}
+@keyframes fade{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none}}
+@media (prefers-reduced-motion: reduce){ .view{animation:none} }
+
+/* ---------- 見出し / テキスト ---------- */
+.page-title{
+  font-family:var(--mincho); font-weight:600; color:var(--blue);
+  font-size:clamp(1.9rem,5.5vw,2.6rem); line-height:1.25; margin:0 0 6px;
+}
+.page-lead{margin:0 0 22px; color:var(--ink); font-size:1.02rem}
+.page-lead b{color:var(--red)}
+.eyebrow{font-size:.8rem; color:var(--faint); letter-spacing:.04em; margin:0 0 4px}
+
+section.card{
+  background:var(--card); border:1px solid var(--frame); border-radius:var(--radius);
+  padding:20px 20px 22px; margin:16px 0; box-shadow:0 1px 0 rgba(39,48,63,.04);
+}
+section.card > h2{
+  margin:0 0 10px; font-family:var(--mincho); font-weight:600; font-size:1.25rem;
+  padding-left:.6em; border-left:5px solid var(--blue); line-height:1.4;
+}
+section.card > h3{margin:18px 0 6px; font-size:1.02rem; color:var(--ink)}
+p{margin:.5em 0}
+.muted{color:var(--faint)}
+.small{font-size:.9rem}
+.tiny{font-size:.8rem}
+ul.tidy{margin:.4em 0; padding-left:1.3em}
+ul.tidy li{margin:.25em 0}
+
+/* 用語の小さな説明 */
+.term{border-bottom:1px dotted var(--fainter); cursor:help}
+.gloss{
+  display:inline-block; background:var(--blue-weak); color:var(--blue);
+  border-radius:4px; padding:0 .4em; font-size:.82rem; font-weight:600;
+}
+.callout{
+  border:1px solid var(--frame); border-left:5px solid var(--amber);
+  background:var(--amber-weak); border-radius:8px; padding:10px 14px; margin:14px 0;
+  font-size:.92rem;
+}
+.callout.info{border-left-color:var(--blue); background:var(--blue-weak)}
+.callout.ok{border-left-color:var(--ok); background:var(--ok-weak)}
+.callout b{color:inherit}
+
+/* ---------- タブ ---------- */
+.tabs{display:flex; gap:6px; flex-wrap:wrap; margin:4px 0 18px}
+.tab{
+  font-family:var(--gothic); font-size:.92rem; font-weight:700; cursor:pointer;
+  border:1px solid var(--frame-strong); background:#fff; color:var(--faint);
+  border-radius:999px; padding:7px 16px; line-height:1; display:inline-flex; gap:7px; align-items:center;
+}
+.tab .n{font-family:var(--mincho); color:var(--fainter)}
+.tab:hover{color:var(--blue); border-color:var(--blue-mid)}
+.tab[aria-selected="true"]{background:var(--blue); color:#fff; border-color:var(--blue)}
+.tab[aria-selected="true"] .n{color:#cfd8f7}
+.panel[hidden]{display:none}
+
+/* ---------- フォーム要素 ---------- */
+label.field{display:block; font-size:.84rem; color:var(--faint); margin:14px 0 4px; font-weight:600}
+input[type=text], input[type=number], textarea, select{
+  width:100%; font-size:1rem; color:var(--ink); background:#fff; font-family:var(--gothic);
+  border:1px solid var(--frame-strong); border-radius:8px; padding:10px 12px; outline:none;
+}
+textarea{line-height:1.7; resize:vertical; min-height:4.5em}
+input:focus, textarea:focus, select:focus{border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-weak)}
+input.mono, textarea.mono{font-family:var(--mono); letter-spacing:.02em}
+.row{display:flex; gap:12px; flex-wrap:wrap}
+.row > .col{flex:1 1 160px; min-width:0}
+.inline{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+
+.btn{
+  display:inline-flex; align-items:center; gap:7px; cursor:pointer;
+  font-family:var(--gothic); font-size:.92rem; font-weight:700; line-height:1;
+  border-radius:8px; padding:10px 16px; border:1px solid var(--blue); background:var(--blue); color:#fff;
+}
+.btn:hover{filter:brightness(1.06)}
+.btn:active{transform:translateY(1px)}
+.btn[disabled]{opacity:.5; cursor:not-allowed; filter:none}
+.btn.ghost{background:#fff; color:var(--blue)}
+.btn.ghost:hover{background:var(--blue-weak)}
+.btn.red{background:var(--red); border-color:var(--red)}
+.btn.quiet{background:#fff; color:var(--faint); border-color:var(--frame-strong)}
+.btn.quiet:hover{color:var(--blue); border-color:var(--blue-mid); background:var(--blue-weak)}
+.btn.sm{padding:6px 11px; font-size:.84rem}
+.btn-row{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px}
+
+kbd{font-family:var(--mono); font-size:.85em; background:#fff; border:1px solid var(--frame-strong);
+  border-bottom-width:2px; border-radius:5px; padding:1px 6px}
+
+/* ---------- データ表示 ---------- */
+.mono-box{
+  font-family:var(--mono); font-size:.86rem; letter-spacing:.03em; line-height:1.9;
+  background:var(--paper); border:1px solid var(--frame); border-radius:8px;
+  padding:10px 12px; word-break:break-all; min-height:1.9em;
+}
+.hash-hex{font-family:var(--mono); font-size:.84rem; letter-spacing:.04em; line-height:1.95; word-break:break-all}
+.hash-hex span{color:#8b93a3}
+.hash-hex span.diff{color:var(--red); font-weight:700; background:var(--red-weak); border-radius:2px}
+
+table.data{border-collapse:collapse; width:100%; font-size:.9rem; margin-top:10px}
+table.data th, table.data td{border:1px solid var(--frame); padding:6px 10px; text-align:left; vertical-align:top}
+table.data th{background:var(--blue-weak); color:var(--blue); font-weight:700; font-size:.82rem}
+table.data td.mono, table.data th.mono{font-family:var(--mono)}
+table.data tr.hit td{background:var(--red-weak)}
+table.data tr.hit td:first-child{box-shadow:inset 3px 0 0 var(--red)}
+.scrollx{overflow-x:auto; -webkit-overflow-scrolling:touch}
+
+.badge{display:inline-block; font-size:.74rem; font-weight:700; letter-spacing:.03em;
+  border-radius:4px; padding:1px 8px; border:1.5px solid var(--faint); color:var(--faint); background:#fff}
+.badge.ok{color:var(--ok); border-color:var(--ok); background:var(--ok-weak)}
+.badge.ng{color:var(--red); border-color:var(--red); background:var(--red-weak)}
+.badge.blue{color:var(--blue); border-color:var(--blue); background:var(--blue-weak)}
+
+/* 統計タイル */
+.stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin:14px 0}
+.stat{border:1px solid var(--frame); border-radius:8px; padding:10px 12px; background:var(--paper)}
+.stat .k{font-size:.76rem; color:var(--faint)}
+.stat .v{font-family:var(--mono); font-size:1.25rem; font-weight:700; color:var(--blue); line-height:1.3; word-break:break-all}
+.stat .v.red{color:var(--red)}
+.stat .v small{font-size:.6em; color:var(--faint); font-weight:400}
+
+/* 進捗バー */
+.meter{height:10px; border-radius:999px; background:var(--grid); overflow:hidden; border:1px solid var(--frame); flex:1 1 180px}
+.meter i{display:block; height:100%; width:0%; background:var(--red); transition:width .2s}
+@media (prefers-reduced-motion: reduce){ .meter i{transition:none} }
+
+/* ---------- Stage1: シーザーのリング ---------- */
+.ring-wrap{display:flex; justify-content:center; margin:10px 0}
+.ring-wrap svg{max-width:100%; height:auto}
+.ring-letter{font-family:var(--mono); font-size:11px; fill:var(--ink)}
+.ring-letter.plain{fill:var(--blue); font-weight:700}
+.ring-letter.cipher{fill:var(--red); font-weight:700}
+
+/* ---------- Stage2: 頻度バー ---------- */
+.freq{display:grid; grid-template-columns:1.6em 1fr auto; gap:3px 8px; align-items:center; font-size:.8rem}
+.freq .lab{font-family:var(--mono); color:var(--faint); text-align:center}
+.freq .bar{height:12px; background:var(--blue-mid); border-radius:3px; min-width:1px}
+.freq .bar.en{background:var(--ok-weak); border:1px solid var(--ok)}
+.freq .val{font-family:var(--mono); color:var(--faint); font-size:.72rem}
+.mapgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(88px,1fr)); gap:8px; margin-top:10px}
+.mapcell{border:1px solid var(--frame); border-radius:7px; padding:6px 8px; background:#fff; text-align:center}
+.mapcell .from{font-family:var(--mono); font-weight:700; color:var(--red); font-size:1.05rem}
+.mapcell .arr{color:var(--fainter); font-size:.8rem}
+.mapcell input{padding:4px; text-align:center; font-family:var(--mono); text-transform:lowercase; font-size:1rem}
+.decoded{font-family:var(--mono); font-size:.95rem; line-height:1.9; letter-spacing:.02em}
+.decoded .known{color:var(--blue); font-weight:700}
+.decoded .unknown{color:var(--fainter)}
+
+/* ---------- Stage3: ビットグリッド（雪崩効果） ---------- */
+.bitgrid{display:grid; grid-template-columns:repeat(32, 1fr); gap:2px; margin:8px 0; max-width:560px}
+.bitgrid .bit{aspect-ratio:1/1; border-radius:2px; background:var(--grid)}
+.bitgrid .bit.on{background:var(--blue)}
+.bitgrid.cmp .bit.flip{background:var(--red); box-shadow:0 0 0 1px var(--red)}
+.legend{display:flex; gap:16px; flex-wrap:wrap; font-size:.8rem; color:var(--faint); margin-top:6px}
+.legend .sw{display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:-1px; margin-right:5px}
+
+/* ---------- SVG 折れ線グラフ ---------- */
+.chart{width:100%; height:auto; display:block}
+.chart .axis{stroke:var(--frame-strong); stroke-width:1}
+.chart .gridln{stroke:var(--grid); stroke-width:1}
+.chart .lbl{fill:var(--faint); font-size:10px; font-family:var(--mono)}
+.chart .lbl.ax{fill:var(--faint); font-size:11px; font-family:var(--gothic)}
+.chart .series-measured{fill:none; stroke:var(--blue); stroke-width:2}
+.chart .series-theory{fill:none; stroke:var(--red); stroke-width:2; stroke-dasharray:5 4}
+.chart .dot{fill:var(--blue)}
+.chart-legend{display:flex; gap:18px; flex-wrap:wrap; font-size:.82rem; color:var(--faint); margin-top:4px}
+.chart-legend .ln{display:inline-block; width:22px; height:0; border-top:3px solid var(--blue); vertical-align:middle; margin-right:6px}
+.chart-legend .ln.theory{border-top:3px dashed var(--red)}
+
+/* ---------- ステージカード（ホーム） ---------- */
+.stage-cards{display:grid; gap:14px; grid-template-columns:1fr; margin-top:6px}
+@media(min-width:620px){.stage-cards{grid-template-columns:1fr 1fr}}
+.stage-card{
+  display:block; text-decoration:none; color:inherit; background:var(--card);
+  border:1px solid var(--frame); border-radius:var(--radius); padding:16px 18px;
+  transition:border-color .15s, transform .15s, box-shadow .15s;
+}
+.stage-card:hover{border-color:var(--blue-mid); transform:translateY(-2px); box-shadow:0 6px 18px rgba(43,80,200,.08)}
+.stage-card .no{font-family:var(--mincho); font-size:1.6rem; color:var(--blue); line-height:1}
+.stage-card h3{margin:6px 0 4px; font-size:1.1rem; color:var(--ink)}
+.stage-card p{margin:0; font-size:.88rem; color:var(--faint)}
+.stage-card .tags{margin-top:10px; display:flex; gap:6px; flex-wrap:wrap}
+
+/* ステージ間の前後移動 */
+.stage-nav{display:flex; justify-content:space-between; gap:10px; margin-top:26px; flex-wrap:wrap}
+.stage-nav a{text-decoration:none}
+
+/* ---------- フッター ---------- */
+.site-footer{border-top:1px solid var(--frame); margin-top:30px}
+.site-footer .inner{max-width:var(--maxw); margin:0 auto; padding:20px 18px 40px; color:var(--faint); font-size:.86rem; line-height:1.9}
+.site-footer a{color:var(--blue)}
+
+/* ---------- 補助 ---------- */
+.spin{display:inline-block; width:14px; height:14px; border:2px solid var(--blue-mid); border-top-color:var(--blue);
+  border-radius:50%; animation:spin .7s linear infinite; vertical-align:-2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){ .spin{animation:none} }
+.visually-hidden{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0)}
+hr.soft{border:none; border-top:1px dashed var(--frame-strong); margin:18px 0}
+
+/* 印刷（卒論に貼る用のスクショ向けに、UIを静かにする） */
+@media print{
+  body{background:#fff}
+  .site-header, nav.main, .btn, .tabs, .stage-nav, .site-footer{display:none !important}
+  section.card{box-shadow:none; break-inside:avoid}
+}

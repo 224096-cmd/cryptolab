@@ -4,295 +4,55 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="color-scheme" content="light" />
+<meta name="theme-color" content="#fbfaf6" />
 <title>CryptoLab — 暗号解読で学ぶ情報セキュリティ</title>
-<meta name="description" content="暗号を「解読する」体験を通して、情報セキュリティのしくみを学ぶWeb教材（開発中・v0.1 配信テスト版）" />
-<style>
-:root{
-  --paper:#fbfaf6;      /* 紙 */
-  --grid:#e7ecf5;       /* 方眼の線 */
-  --card:#ffffff;       /* カード */
-  --frame:#d9dde8;      /* カードの枠 */
-  --ink:#27303f;        /* 本文インク */
-  --faint:#6d7686;      /* 薄墨 */
-  --blue:#2b50c8;       /* 青ペン */
-  --blue-weak:#eef2fd;
-  --red:#c9372c;        /* 赤ペン（添削） */
-  --red-weak:#fdeeec;
-  --ok:#1f7a4d;         /* 合格印 */
-  --ok-weak:#eaf6ef;
-  --mincho:"Hiragino Mincho ProN","Yu Mincho","BIZ UDMincho","MS PMincho",serif;
-  --gothic:"Hiragino Kaku Gothic ProN","Hiragino Sans","BIZ UDPGothic","Yu Gothic",Meiryo,sans-serif;
-  --mono:ui-monospace,"Cascadia Mono",Consolas,"Courier New",monospace;
-}
-*{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
-body{
-  margin:0; color:var(--ink); font-family:var(--gothic); line-height:1.85;
-  background-color:var(--paper);
-  background-image:
-    linear-gradient(var(--grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-  background-size:28px 28px;
-  min-height:100svh;
-}
-.wrap{max-width:760px; margin:0 auto; padding:44px 18px 72px}
-
-header{margin-bottom:34px}
-.chips{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 20px}
-.chip{font-size:.78rem; letter-spacing:.03em; color:var(--blue);
-  border:1px solid var(--blue); border-radius:4px; padding:2px 10px; background:var(--blue-weak)}
-h1{margin:0 0 6px; font-family:var(--mincho); font-weight:600; color:var(--blue);
-  font-size:clamp(2.4rem,8vw,3.3rem); line-height:1.2; letter-spacing:.01em;
-  border-bottom:3px double var(--blue); display:inline-block; padding:0 .1em .08em 0}
-.tagline{margin:10px 0 0; font-size:1.02rem}
-.tagline b{color:var(--red)}
-
-section{background:var(--card); border:1px solid var(--frame); border-radius:10px;
-  padding:22px 22px 24px; margin:18px 0; box-shadow:0 1px 0 rgba(39,48,63,.04)}
-h2{margin:0 0 10px; font-family:var(--mincho); font-weight:600; font-size:1.3rem;
-  padding-left:.6em; border-left:5px solid var(--blue); line-height:1.4}
-p{margin:.45em 0}
-.note{color:var(--faint); font-size:.9rem}
-a{color:var(--blue)}
-
-/* 環境チェック */
-ul.checks{list-style:none; margin:14px 0 0; padding:0; display:grid; gap:10px}
-@media(min-width:620px){ul.checks{grid-template-columns:1fr 1fr}}
-ul.checks li{display:flex; gap:10px; align-items:flex-start;
-  border:1px solid var(--frame); border-radius:8px; padding:10px 12px; background:var(--paper)}
-.st{flex:none; margin-top:3px; font-size:.78rem; font-weight:700; letter-spacing:.05em;
-  border-radius:4px; padding:1px 9px; white-space:nowrap;
-  color:var(--faint); border:1.5px solid var(--faint); background:#fff}
-.st.ok{color:var(--ok); border-color:var(--ok); background:var(--ok-weak)}
-.st.ng{color:var(--red); border-color:var(--red); background:var(--red-weak)}
-.checks b{font-size:.95rem}
-.checks small{display:block; color:var(--faint); line-height:1.6}
-
-/* 雪崩効果ミニ体験 */
-label{display:block; font-size:.86rem; color:var(--faint); margin:16px 0 4px}
-input[type="text"]{width:100%; font-size:1rem; color:var(--ink); background:#fff;
-  border:1px solid var(--frame); border-radius:8px; padding:10px 12px; outline:none; font-family:var(--gothic)}
-input[type="text"]:focus{border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-weak)}
-.hash{font-family:var(--mono); font-size:.84rem; letter-spacing:.05em; word-break:break-all;
-  line-height:1.95; background:var(--paper); border:1px solid var(--frame); border-radius:8px;
-  padding:9px 12px; margin-top:6px; min-height:2.5em}
-.hash span{color:#8b93a3}
-.hash span.d{color:var(--red); font-weight:700; background:var(--red-weak); border-radius:2px}
-.meterRow{display:flex; align-items:center; gap:12px; margin-top:18px; flex-wrap:wrap}
-.meter{flex:1 1 200px; height:10px; border-radius:999px; background:var(--grid); overflow:hidden;
-  border:1px solid var(--frame)}
-.meter i{display:block; height:100%; width:0%; background:var(--red); transition:width .25s}
-@media(prefers-reduced-motion:reduce){.meter i{transition:none}}
-#diffStat{font-family:var(--mono); font-size:.9rem; font-weight:700; color:var(--red)}
-
-/* 開発予定のステージ */
-ol.stages{list-style:none; margin:14px 0 0; padding:0; display:grid; gap:10px}
-ol.stages li{display:flex; gap:14px; align-items:flex-start;
-  border:1px solid var(--frame); border-radius:8px; padding:12px 14px; background:var(--paper)}
-.sno{flex:none; font-family:var(--mincho); font-weight:600; color:var(--blue); font-size:1.25rem;
-  width:2em; text-align:center; border-right:1px solid var(--frame); line-height:1.5}
-.stages b{display:block; font-size:.98rem}
-.stages small{color:var(--faint); line-height:1.65; display:block}
-.soon{flex:none; margin-left:auto; align-self:center; font-size:.72rem; color:var(--faint);
-  border:1px solid var(--frame); border-radius:4px; padding:1px 8px; white-space:nowrap; background:#fff}
-
-footer{margin-top:40px; color:var(--faint); font-size:.88rem; line-height:1.9}
-</style>
+<meta name="description" content="暗号を「解読する」体験を通して、情報セキュリティのしくみ（鍵・ハッシュ・RSA・計算量的安全性）を学ぶWeb教材。完全ローカル動作・無料。" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232b50c8'/%3E%3Ctext x='16' y='23' font-size='20' text-anchor='middle' fill='white' font-family='serif'%3E%F0%9F%94%91%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="assets/css/style.css" />
 </head>
 <body>
-<div class="wrap">
 
-<header>
-  <div class="chips">
-    <span class="chip">v0.1 配信テスト版</span>
-    <span class="chip">ブラウザ内だけで動作・外部への送信なし</span>
+<header class="site-header">
+  <div class="bar">
+    <a class="brand" href="#/home">
+      <span class="logo">CryptoLab</span>
+      <span class="sub">暗号解読で学ぶ情報セキュリティ</span>
+    </a>
+    <nav class="main" aria-label="メインナビ">
+      <a href="#/home">ホーム</a>
+      <a href="#/stage1">① シーザー</a>
+      <a href="#/stage2">② 換字式</a>
+      <a href="#/stage3">③ ハッシュ</a>
+      <a href="#/stage4">④ RSA</a>
+      <a href="#/data">実験ノート（<span id="logCount">0</span>）</a>
+      <a href="#/about">About</a>
+    </nav>
   </div>
-  <h1>CryptoLab</h1>
-  <p class="tagline">暗号を<b>「解読する」</b>体験から、情報セキュリティのしくみを学ぶWeb教材（開発中）</p>
 </header>
 
-<section>
-  <h2>このページについて</h2>
-  <p>GitHub Pages での公開（デプロイ）がうまくいったかを確かめるための、最小構成のページです。
-     下の「環境チェック」がすべて <strong>OK</strong> なら、この教材に必要な機能がお使いのブラウザで動きます。
-     スマートフォンでも開いて確かめてみてください。</p>
-  <p class="note">すべての計算はこのページの中（ブラウザ内）だけで行われ、入力した文字がどこかへ送信されることはありません。</p>
-</section>
+<main class="wrap">
+  <div id="view" class="view"></div>
+</main>
 
-<section>
-  <h2>環境チェック</h2>
-  <ul class="checks">
-    <li><span class="st" id="c1">判定中</span>
-      <div><b>HTTPS（安全な接続）</b><small>暗号計算API（WebCrypto）を使うための前提条件</small></div></li>
-    <li><span class="st" id="c2">判定中</span>
-      <div><b>BigInt（大きな整数の計算）</b><small>RSAの剰余演算 m^e mod n（あまりの計算）に使用</small></div></li>
-    <li><span class="st" id="c3">判定中</span>
-      <div><b>WebCrypto（SHA-256）</b><small>ハッシュ値の計算に使用。既知の値と照合して判定</small></div></li>
-    <li><span class="st" id="c4">判定中</span>
-      <div><b>Web Worker（裏での並列計算）</b><small>総当たり解読を、画面を止めずに実行するために使用</small></div></li>
-  </ul>
-</section>
-
-<section>
-  <h2>ミニ体験：ハッシュの「雪崩効果」</h2>
-  <p>ハッシュ関数（データの“指紋”を作る計算）は、入力が <strong>1文字</strong>違うだけで結果が大きく変わります。
-     どちらかの文字を書き換えて、SHA-256 の値を見比べてみてください。</p>
-
-  <label for="inA">メッセージ A</label>
-  <input id="inA" type="text" value="Hello" autocomplete="off" spellcheck="false" />
-  <div class="hash" id="hashA" aria-live="polite"></div>
-
-  <label for="inB">メッセージ B</label>
-  <input id="inB" type="text" value="hello" autocomplete="off" spellcheck="false" />
-  <div class="hash" id="hashB" aria-live="polite"></div>
-
-  <div class="meterRow">
-    <div class="meter" aria-hidden="true"><i id="meterBar"></i></div>
-    <span id="diffStat">計算中…</span>
+<footer class="site-footer">
+  <div class="inner">
+    CryptoLab — 卒業研究として開発中の情報セキュリティ学習教材。すべての計算はブラウザ内で完結し、入力は外部に送信されません。<br>
+    ソースコード：<a href="https://github.com/224096-cmd/cryptolab">github.com/224096-cmd/cryptolab</a>
   </div>
-  <p class="note">赤い桁は、2つのハッシュ値で<strong>異なっている</strong>部分。
-     1文字の違いでも全体の約半分のビットが変わるこの性質を「雪崩効果（アバランシェ効果）」と呼びます。</p>
-</section>
-
-<section>
-  <h2>開発予定のステージ</h2>
-  <ol class="stages">
-    <li><span class="sno">1</span>
-      <div><b>シーザー暗号を破る</b>
-      <small>ずらし方（鍵）を全部試す「総当たり（ブルートフォース）」で解読。暗号の基本「平文・鍵・暗号文」を知る。</small></div>
-      <span class="soon">準備中</span></li>
-    <li><span class="sno">2</span>
-      <div><b>換字式暗号と頻度分析</b>
-      <small>文字の出現回数の“かたより”を手がかりに、統計の力で解読する。</small></div>
-      <span class="soon">準備中</span></li>
-    <li><span class="sno">3</span>
-      <div><b>パスワードとハッシュ</b>
-      <small>弱いパスワードのハッシュ値を総当たり・辞書攻撃で割り、雪崩効果とパスワードの強さを学ぶ。</small></div>
-      <span class="soon">準備中</span></li>
-    <li><span class="sno">4</span>
-      <div><b>ミニRSAと計算量の爆発</b>
-      <small>小さな素数で鍵を作って解読に挑戦。鍵を長くすると解読時間が爆発的に増えること（計算量的安全性）を体感する。</small></div>
-      <span class="soon">準備中</span></li>
-  </ol>
-</section>
-
-<footer>
-  卒業研究として開発中の教材です。ソースコードは
-  <a href="https://github.com/224096-cmd/cryptolab">GitHub リポジトリ</a>で公開しています。
 </footer>
 
-</div>
+<noscript>
+  <p style="text-align:center;color:#c9372c;padding:20px">
+    この教材の動作には JavaScript が必要です。ブラウザの設定で JavaScript を有効にしてください。
+  </p>
+</noscript>
 
-<noscript><p style="text-align:center;color:#c9372c">このページの動作確認には JavaScript が必要です。</p></noscript>
-
-<script>
-(function(){
-"use strict";
-function $(id){ return document.getElementById(id); }
-function setStatus(id, ok){
-  var el=$(id);
-  el.textContent = ok ? "OK" : "NG";
-  el.className = "st " + (ok ? "ok" : "ng");
-}
-
-/* 1) HTTPS（セキュアコンテキスト）か */
-setStatus("c1", !!window.isSecureContext);
-
-/* 2) BigInt：剰余演算のサニティチェック（7^5 mod 13 = 11）
-      ※「123n」というBigInt専用の書き方は、未対応ブラウザで構文エラーになるため使わない */
-var bigOk=false;
-try{
-  if(typeof BigInt==="function"){
-    var base=BigInt(7), m=BigInt(13), acc=BigInt(1);
-    for(var i=0;i<5;i++){ acc=(acc*base)%m; }
-    bigOk = (acc===BigInt(11));
-  }
-}catch(e){ bigOk=false; }
-setStatus("c2", bigOk);
-
-/* 共通：SHA-256 */
-function bytesToHex(u8){
-  var s="";
-  for(var i=0;i<u8.length;i++){ s+=u8[i].toString(16).padStart(2,"0"); }
-  return s;
-}
-function sha256(str){
-  var data=new TextEncoder().encode(str);
-  return crypto.subtle.digest("SHA-256",data).then(function(buf){ return new Uint8Array(buf); });
-}
-
-/* 3) WebCrypto：SHA-256("abc") の先頭を既知の値 ba7816bf... と照合 */
-(function(){
-  try{
-    if(!(window.crypto && crypto.subtle && crypto.subtle.digest)){ throw new Error("no subtle"); }
-    sha256("abc").then(function(u8){
-      var ok = bytesToHex(u8).indexOf("ba7816bf")===0;
-      setStatus("c3", ok);
-      if(ok){ update(); } else { avUnavailable(); }
-    }).catch(function(){ setStatus("c3", false); avUnavailable(); });
-  }catch(e){ setStatus("c3", false); avUnavailable(); }
-})();
-
-/* 4) Web Worker：即席のWorkerを作って往復できるか */
-(function(){
-  try{
-    if(typeof Worker==="undefined"){ throw new Error("no worker"); }
-    var code="self.onmessage=function(e){ self.postMessage(e.data*2); };";
-    var url=URL.createObjectURL(new Blob([code],{type:"text/javascript"}));
-    var w=new Worker(url);
-    var done=false;
-    var t=setTimeout(function(){
-      if(!done){ done=true; setStatus("c4",false); w.terminate(); }
-    },2500);
-    w.onmessage=function(e){
-      if(!done){ done=true; clearTimeout(t); setStatus("c4", e.data===42); w.terminate(); URL.revokeObjectURL(url); }
-    };
-    w.onerror=function(){
-      if(!done){ done=true; clearTimeout(t); setStatus("c4",false); }
-    };
-    w.postMessage(21);
-  }catch(e){ setStatus("c4", false); }
-})();
-
-/* --- 雪崩効果ミニ体験 --- */
-var seq=0;
-function popcount(x){ var c=0; while(x){ c+=x&1; x>>=1; } return c; }
-function renderHex(el,hex,other){
-  el.textContent="";
-  var frag=document.createDocumentFragment();
-  for(var i=0;i<hex.length;i++){
-    var s=document.createElement("span");
-    s.textContent=hex[i];
-    if(other.length===hex.length && hex[i]!==other[i]){ s.className="d"; }
-    frag.appendChild(s);
-  }
-  el.appendChild(frag);
-}
-function update(){
-  try{
-    var my=++seq;
-    var a=$("inA").value, b=$("inB").value;
-    Promise.all([sha256(a),sha256(b)]).then(function(r){
-      if(my!==seq){ return; } /* 入力が追い越された計算は捨てる */
-      var ua=r[0], ub=r[1];
-      var diff=0;
-      for(var i=0;i<ua.length;i++){ diff+=popcount(ua[i]^ub[i]); }
-      renderHex($("hashA"), bytesToHex(ua), bytesToHex(ub));
-      renderHex($("hashB"), bytesToHex(ub), bytesToHex(ua));
-      var pct=diff/256*100;
-      $("meterBar").style.width=pct+"%";
-      $("diffStat").textContent = (diff===0)
-        ? "完全一致（0 / 256 ビット）：同じ入力からは必ず同じハッシュ値になります"
-        : "異なるビット " + diff + " / 256（" + pct.toFixed(1) + "%）";
-    }).catch(function(){ /* 計算失敗時は表示を変えない */ });
-  }catch(e){ /* WebCryptoが無い環境ではミニ体験を実行しない */ }
-}
-function avUnavailable(){
-  $("diffStat").textContent="この環境では WebCrypto が使えないため、ミニ体験は実行できません。";
-}
-$("inA").addEventListener("input",update);
-$("inB").addEventListener("input",update);
-})();
-</script>
+<!-- 読み込み順：app.js（基盤・ルーター）→ 各ステージ／ページ（ルート登録） -->
+<script defer src="assets/js/app.js"></script>
+<script defer src="assets/js/stage1.js"></script>
+<script defer src="assets/js/stage2.js"></script>
+<script defer src="assets/js/stage3.js"></script>
+<script defer src="assets/js/stage4.js"></script>
+<script defer src="assets/js/pages.js"></script>
 </body>
 </html>
