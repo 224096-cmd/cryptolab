@@ -1,0 +1,39 @@
+# main ブランチへ push されるたびに、リポジトリの中身をそのまま GitHub Pages へ公開するワークフロー
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: ["main"]
+  # Actions タブから手動でも実行できるようにする
+  workflow_dispatch:
+
+# GITHUB_TOKEN に Pages へのデプロイ権限を与える
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# デプロイは同時に1つだけ実行する（実行中のものは中断しない）
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # リポジトリ全体をそのまま公開する
+          path: "."
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

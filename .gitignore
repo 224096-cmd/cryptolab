@@ -1,0 +1,8 @@
+# OS が自動生成するファイル
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# 配布用 zip や一時ファイル（リポジトリには含めない）
+*.zip
+*.tmp
