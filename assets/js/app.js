@@ -241,20 +241,6 @@ CL.pstate = function(name){
   };
 };
 
-/* ------------------------------------------------------------------
-   モード（通常／研究）。研究モードはパスワードで解除。
-   通常は授業向けにやさしく、研究モードでは高度な設定が開く。
------------------------------------------------------------------- */
-CL.mode = (function(){
-  var KEY="cryptolab.research", PW="224096", listeners=[];
-  function isResearch(){ try{ return localStorage.getItem(KEY)==="1"; }catch(e){ return false; } }
-  function setR(v){ try{ if(v) localStorage.setItem(KEY,"1"); else localStorage.removeItem(KEY); }catch(e){} notify(); }
-  function unlock(pw){ if(String(pw)===PW){ setR(true); return true; } return false; }
-  function lock(){ setR(false); }
-  function onChange(fn){ listeners.push(fn); }
-  function notify(){ listeners.forEach(function(f){ try{ f(); }catch(e){} }); }
-  return { isResearch:isResearch, unlock:unlock, lock:lock, onChange:onChange };
-})();
 
 /* ------------------------------------------------------------------
    実験ログの保管（localStorage に自動保存）
@@ -343,21 +329,25 @@ CL.export = (function(){
    パスワードは平文で持たず、SHA-256 のハッシュ値で照合する。
 ------------------------------------------------------------------ */
 CL.mode = (function(){
-  var KEY="cryptolab.mode";
+  // 研究モードは「この表示セッションだけ」有効。保存はしない。
+  // → ページを読み込み直すと必ず一般（授業用）モードに戻るので、
+  //    勝手に研究モードで開くことはない。使うときは毎回パスワードで解錠する。
   var PW_HASH="bc7bca63a14c7cc1bb2ecd7774fb2ef713ae25d046c9b63d90a169052a49b3ab";
-  var listeners=[];
-  function get(){ try{ return localStorage.getItem(KEY)==="research" ? "research" : "learn"; }catch(e){ return "learn"; } }
-  function isResearch(){ return get()==="research"; }
-  function apply(){ try{ document.body.setAttribute("data-mode", get()); }catch(e){} }
-  function setLearn(){ try{ localStorage.setItem(KEY,"learn"); }catch(e){} apply(); notify(); }
+  var cur="learn", listeners=[];
+  // 旧版が保存していた値が残っていても無視・消去する（勝手に研究モードに入るのを防ぐ）
+  try{ localStorage.removeItem("cryptolab.mode"); localStorage.removeItem("cryptolab.research"); }catch(e){}
+  function get(){ return cur; }
+  function isResearch(){ return cur==="research"; }
+  function apply(){ try{ document.body.setAttribute("data-mode", cur); }catch(e){} }
+  function setLearn(){ cur="learn"; apply(); notify(); }
   function unlock(pw){
     return CL.crypto.sha256Hex(String(pw)).then(function(h){
-      if(h===PW_HASH){ try{ localStorage.setItem(KEY,"research"); }catch(e){} apply(); notify(); return true; }
+      if(h===PW_HASH){ cur="research"; apply(); notify(); return true; }
       return false;
     });
   }
   function onChange(fn){ listeners.push(fn); }
-  function notify(){ listeners.forEach(function(f){ try{ f(get()); }catch(e){} }); }
+  function notify(){ listeners.forEach(function(f){ try{ f(cur); }catch(e){} }); }
   return { get:get, isResearch:isResearch, apply:apply, setLearn:setLearn, unlock:unlock, onChange:onChange };
 })();
 
