@@ -175,6 +175,20 @@ CL.num = (function(){
 })();
 
 /* ------------------------------------------------------------------
+   ページ単位の状態保存（localStorage）
+   各ステージの入力・途中経過をページを離れても保持する。
+   「リセット」ボタンを押すまで消えない。
+------------------------------------------------------------------ */
+CL.pstate = function(name){
+  var KEY = "cryptolab.state." + name;
+  return {
+    get: function(){ try{ var r=localStorage.getItem(KEY); return r?JSON.parse(r):null; }catch(e){ return null; } },
+    set: function(obj){ try{ localStorage.setItem(KEY, JSON.stringify(obj)); }catch(e){} },
+    clear: function(){ try{ localStorage.removeItem(KEY); }catch(e){} }
+  };
+};
+
+/* ------------------------------------------------------------------
    実験ログの保管（localStorage に自動保存）
    各レコードは「平たいオブジェクト」。CSV 化しやすいように。
 ------------------------------------------------------------------ */
@@ -388,7 +402,7 @@ CL.router = (function(){
     window.addEventListener("hashchange", render);
     render();
   }
-  return { start:start, current:current };
+  return { start:start, current:current, reload:render };
 })();
 
 /* 全ページ共通の UI 部品 ------------------------------------------ */
@@ -421,7 +435,24 @@ CL.ui = (function(){
   function term(word, desc){
     return el("abbr",{class:"term",title:desc},[word]);
   }
-  return { tabBar:tabBar, stageNav:stageNav, term:term };
+  // ページのリセット操作（入力・途中経過を消して最初に戻す）
+  function resetBar(label, onReset){
+    var btn = el("button",{class:"btn quiet sm", onclick:function(){
+      if(confirm("このページの入力と途中経過をすべて消して、最初の状態に戻します。よろしいですか？")) onReset();
+    }},["↺ ", label||"このページをリセット"]);
+    return el("div",{style:"display:flex;justify-content:flex-end;margin:-4px 0 12px"},[btn]);
+  }
+  // 解説を折りたたむ部品（説明を充実させつつ、長くなりすぎない）
+  function details(summary, builder){
+    var d = el("details",{class:"explain"});
+    var s = el("summary",{},[summary]);
+    d.appendChild(s);
+    var body = el("div",{class:"explain-body"});
+    builder(body);
+    d.appendChild(body);
+    return d;
+  }
+  return { tabBar:tabBar, stageNav:stageNav, term:term, resetBar:resetBar, details:details };
 })();
 
 /* 起動（すべての defer スクリプトが登録を終えてから走る） */

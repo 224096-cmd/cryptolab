@@ -4,7 +4,7 @@
    ===================================================================== */
 "use strict";
 (function(){
-  var el=CL.dom.el, clear=CL.dom.clear, term=CL.ui.term;
+  var el=CL.dom.el, clear=CL.dom.clear, term=CL.ui.term, details=CL.ui.details;
 
   /* ---- 解読ワーカー本体（別スレッドで動く。純JSのSHA-256を内蔵） ----
      Blob から Worker を作るため、ここでは本体を文字列で持つ。          */
@@ -96,30 +96,46 @@ onmessage=function(ev){
     var t=0, pow=1; for(var L=1;L<=maxLen;L++){ pow*=nChars; t+=pow; } return t;
   }
   function esc(s){ return String(s).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c];}); }
+  var RATE_GUESS = 500000; // 目安計算用：1秒あたりのおよその試行回数（純JS・1スレッド）
 
   /* ========================= 見る ========================= */
-  function panelSee(){
+  function panelSee(state, save){
     var wrap=el("div",{class:"panel"});
     wrap.appendChild(el("p",{html:
       term("ハッシュ関数","どんな長さのデータからも、決まった長さの“指紋”を作る一方向の計算。元に戻せない")+
       "（ここでは SHA-256）は、入力から 256ビット＝64桁の16進数の“指紋”を作ります。"+
       "同じ入力からは必ず同じ指紋。でも指紋から元の入力は<b>復元できません</b>。"}));
 
-    var inH=el("input",{type:"text",value:"joho1",spellcheck:"false",autocomplete:"off"});
+    var inH=el("input",{type:"text",spellcheck:"false",autocomplete:"off",value:state.see_h!=null?state.see_h:"joho1"});
     var outH=el("div",{class:"mono-box"});
-    inH.addEventListener("input",function(){ CL.crypto.sha256Hex(inH.value).then(function(h){ outH.textContent=h; }); });
+    inH.addEventListener("input",function(){ state.see_h=inH.value; save(); CL.crypto.sha256Hex(inH.value).then(function(h){ outH.textContent=h; }); });
     wrap.appendChild(el("label",{class:"field",text:"入力（なんでも）"}));
     wrap.appendChild(inH);
     wrap.appendChild(el("label",{class:"field",text:"SHA-256 ハッシュ値（64桁）"}));
     wrap.appendChild(outH);
 
+    wrap.appendChild(details("ハッシュ関数の4つの性質と、使われる場面", function(b){
+      b.appendChild(el("div",{class:"kv"},[
+        el("dt",{text:"決まった長さ"}), el("dd",{text:"入力が1文字でも1万文字でも、出力はいつも256ビット（64桁）。"}),
+        el("dt",{text:"再現性"}),     el("dd",{text:"同じ入力からは、いつ・どの端末でも必ず同じ指紋が出る。"}),
+        el("dt",{text:"一方向性"}),   el("dd",{text:"指紋から元の入力を計算で戻すことはできない（総当たりで探すしかない）。"}),
+        el("dt",{text:"衝突しにくさ"}), el("dd",{text:"違う入力が同じ指紋になることは、現実には起きないほど稀。"})
+      ]));
+      b.appendChild(el("h4",{text:"どこで使われている？"}));
+      b.appendChild(el("p",{html:
+        "・<b>パスワードの保存</b>：サイトはパスワードそのものではなく“指紋”を保存する（破る①で体験）。<br>"+
+        "・<b>ファイルの改ざん検出</b>：ダウンロードしたファイルの指紋を照合して、途中ですり替えられていないか確認。<br>"+
+        "・<b>電子署名・ブロックチェーン</b>：データが1ビットも変わっていないことの証明に使う。"}));
+    }));
+
     wrap.appendChild(el("hr",{class:"soft"}));
     wrap.appendChild(el("h3",{text:"雪崩（なだれ）効果をみる"}));
     wrap.appendChild(el("p",{html:"入力を1文字変えると、指紋の約<b>半分</b>のビットが反転します（"+
-      term("雪崩効果","入力の小さな違いが出力全体に大きく広がる性質。アバランシェ効果")+"）。"}));
+      term("雪崩効果","入力の小さな違いが出力全体に大きく広がる性質。アバランシェ効果")+"）。"+
+      "これが「出力にかたよりを残さない」という、Stage 2 で足りなかった性質です。"}));
 
-    var inA=el("input",{type:"text",value:"Hello",spellcheck:"false",autocomplete:"off"});
-    var inB=el("input",{type:"text",value:"hello",spellcheck:"false",autocomplete:"off"});
+    var inA=el("input",{type:"text",spellcheck:"false",autocomplete:"off",value:state.see_a!=null?state.see_a:"Hello"});
+    var inB=el("input",{type:"text",spellcheck:"false",autocomplete:"off",value:state.see_b!=null?state.see_b:"hello"});
     var hexA=el("div",{class:"hash-hex"}), hexB=el("div",{class:"hash-hex"});
     var grid=el("div",{class:"bitgrid cmp"});
     var cells=[]; for(var i=0;i<256;i++){ var cc=el("span",{class:"bit"}); cells.push(cc); grid.appendChild(cc); }
@@ -127,22 +143,15 @@ onmessage=function(ev){
 
     function toHexDiff(host, hex, other){
       clear(host);
-      for(var i=0;i<hex.length;i++){
-        var sp=el("span",{text:hex[i]});
-        if(other.length===hex.length && hex[i]!==other[i]) sp.className="diff";
-        host.appendChild(sp);
-      }
+      for(var i=0;i<hex.length;i++){ var sp=el("span",{text:hex[i]}); if(other.length===hex.length && hex[i]!==other[i]) sp.className="diff"; host.appendChild(sp); }
     }
     function update(){
+      state.see_a=inA.value; state.see_b=inB.value; save();
       Promise.all([CL.crypto.sha256Bytes(inA.value),CL.crypto.sha256Bytes(inB.value)]).then(function(r){
-        var ua=r[0], ub=r[1];
-        var ha=CL.crypto.bytesToHex(ua), hb=CL.crypto.bytesToHex(ub);
+        var ua=r[0], ub=r[1], ha=CL.crypto.bytesToHex(ua), hb=CL.crypto.bytesToHex(ub);
         toHexDiff(hexA,ha,hb); toHexDiff(hexB,hb,ha);
-        var bitsA=CL.crypto.bytesToBits(ua), bitsB=CL.crypto.bytesToBits(ub), diff=0;
-        for(var i=0;i<256;i++){
-          var flip=bitsA[i]!==bitsB[i]; if(flip) diff++;
-          cells[i].className="bit"+(bitsB[i]?" on":"")+(flip?" flip":"");
-        }
+        var ba=CL.crypto.bytesToBits(ua), bb=CL.crypto.bytesToBits(ub), diff=0;
+        for(var i=0;i<256;i++){ var fl=ba[i]!==bb[i]; if(fl) diff++; cells[i].className="bit"+(bb[i]?" on":"")+(fl?" flip":""); }
         meterBar.style.width=(diff/256*100)+"%";
         diffStat.textContent="反転ビット "+diff+" / 256（"+(diff/256*100).toFixed(1)+"%）";
       }).catch(function(){});
@@ -165,17 +174,18 @@ onmessage=function(ev){
   }
 
   /* ========================= 破る ========================= */
-  function panelBreak(){
+  function panelBreak(state, save){
     var wrap=el("div",{class:"panel"});
     wrap.appendChild(el("p",{html:
-      "ハッシュは元に戻せません。でも「あやしいパスワードを片っぱしからハッシュして、"+
-      "指紋が一致するか見る」なら解けます（"+term("辞書攻撃","よくあるパスワードの一覧を順に試す攻撃")+"・"+
+      "ハッシュは元に戻せません。でも「あやしいパスワードを片っぱしからハッシュして、指紋が一致するか見る」なら解けます（"+
+      term("辞書攻撃","よくあるパスワードの一覧を順に試す攻撃")+"・"+
       term("総当たり","考えうる文字の組合せを全部試す攻撃")+"）。弱いパスワードがいかに速く割れるかを見ます。"}));
 
-    var inPw=el("input",{type:"text",value:"123",spellcheck:"false",autocomplete:"off"});
+    var inPw=el("input",{type:"text",spellcheck:"false",autocomplete:"off",value:state.break_pw!=null?state.break_pw:"123"});
+    inPw.addEventListener("input",function(){ state.break_pw=inPw.value; save(); });
     var presets=el("div",{class:"btn-row"});
     ["1234","password","7k","q9z"].forEach(function(p){
-      presets.appendChild(el("button",{class:"btn quiet sm",text:p,onclick:function(){ inPw.value=p; }}));
+      presets.appendChild(el("button",{class:"btn quiet sm",text:p,onclick:function(){ inPw.value=p; state.break_pw=p; save(); }}));
     });
     wrap.appendChild(el("label",{class:"field",text:"ねらうパスワード（英数字・短め。実在のものは入れないでください）"}));
     wrap.appendChild(inPw);
@@ -187,9 +197,11 @@ onmessage=function(ev){
       el("option",{value:"abcdefghijklmnopqrstuvwxyz",text:"小文字のみ（a-z）"}),
       el("option",{value:"abcdefghijklmnopqrstuvwxyz0123456789",text:"小文字＋数字（a-z,0-9）"})
     ]);
+    if(state.break_cs) selCs.value=state.break_cs;
     var selLen=el("select",{});
-    for(var L=2;L<=6;L++){ selLen.appendChild(el("option",{value:String(L),text:"最大 "+L+" 文字",selected:L===4?"selected":null})); }
-    var chkDict=el("input",{type:"checkbox",checked:"checked"});
+    for(var L=2;L<=12;L++){ selLen.appendChild(el("option",{value:String(L),text:"最大 "+L+" 文字"})); }
+    selLen.value = state.break_len ? state.break_len : "4";
+    var chkDict=el("input",{type:"checkbox"}); chkDict.checked = state.break_dict!==false;
     wrap.appendChild(el("div",{class:"row"},[
       el("div",{class:"col"},[el("label",{class:"field",text:"ためす文字の種類"}),selCs]),
       el("div",{class:"col"},[el("label",{class:"field",text:"ためす長さの上限"}),selLen])
@@ -198,12 +210,16 @@ onmessage=function(ev){
 
     var spaceNote=el("p",{class:"tiny muted"});
     function updateSpace(){
-      var n=selCs.value.length, maxL=parseInt(selLen.value,10);
-      var total=spaceSize(n,maxL);
-      spaceNote.innerHTML="この設定で試す組合せ：最大 <b>"+CL.fmt.sci(total)+"</b> 通り"+
-        (total>5e6?"（<span style='color:#c9372c'>多め：数十秒かかることがあります</span>）":"");
+      state.break_cs=selCs.value; state.break_len=selLen.value; state.break_dict=chkDict.checked; save();
+      var n=selCs.value.length, maxL=parseInt(selLen.value,10), total=spaceSize(n,maxL);
+      var est=total/RATE_GUESS;
+      var warn = est>60;
+      spaceNote.innerHTML="この設定で試す組合せ：最大 <b>"+CL.fmt.sci(total)+"</b> 通り／"+
+        "このブラウザでの目安 <b"+(warn?" style='color:#c9372c'":"")+">約 "+CL.fmt.duration(est)+"</b>"+
+        (warn?"（長すぎる場合は「中止」で止められます）":"");
     }
-    selCs.addEventListener("change",updateSpace); selLen.addEventListener("change",updateSpace); updateSpace();
+    selCs.addEventListener("change",updateSpace); selLen.addEventListener("change",updateSpace); chkDict.addEventListener("change",updateSpace);
+    updateSpace();
     wrap.appendChild(spaceNote);
 
     var startBtn=el("button",{class:"btn",text:"解読を開始"});
@@ -230,8 +246,7 @@ onmessage=function(ev){
       clear(found); setStat("verdict","解読中…"); meterBar.style.width="0%";
       setStat("tried","0"); setStat("elapsed","0 秒"); setStat("rate","— /秒");
       startBtn.disabled=true; stopBtn.disabled=false;
-      settings={charset:selCs.value, maxLen:parseInt(selLen.value,10), useDict:chkDict.checked,
-                csLabel:selCs.options[selCs.selectedIndex].text};
+      settings={charset:selCs.value, maxLen:parseInt(selLen.value,10), useDict:chkDict.checked, csLabel:selCs.options[selCs.selectedIndex].text};
       total=spaceSize(settings.charset.length, settings.maxLen);
       CL.crypto.sha256Hex(pw).then(function(hex){
         worker=CL.worker.fromBody(WORKER_BODY);
@@ -257,12 +272,10 @@ onmessage=function(ev){
         setStat("rate",CL.fmt.sci(m.tried/Math.max(m.elapsed,1e-6))+" /秒");
         setStat("verdict","解読成功！",true);
         found.appendChild(el("div",{class:"callout ok",html:
-          "パスワードは <b>「"+esc(m.password)+"」</b> でした（"+m.via+"／"+
-          CL.fmt.sci(m.tried)+" 回目・"+CL.fmt.duration(m.elapsed)+"）。"}));
+          "パスワードは <b>「"+esc(m.password)+"」</b> でした（"+m.via+"／"+CL.fmt.sci(m.tried)+" 回目・"+CL.fmt.duration(m.elapsed)+"）。"}));
         CL.store.add("stage3","パスワード解読",{
-          パスワード:pw, 文字数:pw.length, 発見方法:m.via, 試行回数:m.tried,
-          所要秒:+m.elapsed.toFixed(4), 設定:settings.csLabel, 長さ上限:settings.maxLen, 解読成功:"はい"
-        });
+          パスワード:pw, 文字数:pw.length, 発見方法:m.via, 試行回数:m.tried, 所要秒:+m.elapsed.toFixed(4),
+          設定:settings.csLabel, 長さ上限:settings.maxLen, 解読成功:"はい"});
         CL.toast("実験ノートに記録（解読成功）");
       } else if(m.type==="exhausted"){
         finish(); setStat("tried",CL.fmt.sci(m.tried)); setStat("elapsed",CL.fmt.duration(m.elapsed));
@@ -272,10 +285,18 @@ onmessage=function(ev){
           "<b>長さや文字の種類を増やすほど、解読に必要な時間は一気にふくれ上がります。</b>"}));
         CL.store.add("stage3","パスワード解読（失敗）",{
           パスワード:pw, 文字数:pw.length, 試行回数:m.tried, 所要秒:+m.elapsed.toFixed(4),
-          設定:settings.csLabel, 長さ上限:settings.maxLen, 解読成功:"いいえ"
-        });
+          設定:settings.csLabel, 長さ上限:settings.maxLen, 解読成功:"いいえ"});
       }
     }
+
+    wrap.appendChild(details("パスワードはどう保存されている？ なぜ総当たりできる？", function(b){
+      b.appendChild(el("p",{html:"まともなサイトは、あなたのパスワードを<b>そのまま保存しません</b>。"+
+        "登録時にハッシュ（指紋）を計算して、その指紋だけを保存します。ログイン時は、入力されたパスワードの指紋が"+
+        "保存された指紋と一致するかを見ます。こうすれば、万一データが漏れてもパスワードそのものは分かりません。"}));
+      b.appendChild(el("p",{html:"ところが攻撃者は、漏れた指紋に対して「あやしいパスワードを片っぱしからハッシュして照合」できます。"+
+        "弱いパスワードは<b>辞書</b>（よくある単語の一覧）で一瞬、短いものは<b>総当たり</b>ですぐ見つかります。"+
+        "ここで体験しているのは、まさにこの攻撃です。"}));
+    }));
     return wrap;
   }
 
@@ -286,10 +307,8 @@ onmessage=function(ev){
     var rate=1e6;
     var charsets=[["数字(10)",10],["小文字(26)",26],["小文字＋数字(36)",36]];
     var tbl=el("table",{class:"data"});
-    var head=el("tr",{},[el("th",{text:"文字数＼種類"})]);
-    charsets.forEach(function(c){ head.appendChild(el("th",{text:c[0]})); });
-    tbl.appendChild(head);
-    [4,6,8,10].forEach(function(len){
+    var head=el("tr",{},[el("th",{text:"文字数＼種類"})]); charsets.forEach(function(c){ head.appendChild(el("th",{text:c[0]})); }); tbl.appendChild(head);
+    [4,6,8,10,12].forEach(function(len){
       var tr=el("tr",{},[el("th",{text:len+" 文字"})]);
       charsets.forEach(function(c){ tr.appendChild(el("td",{class:"mono",text:CL.fmt.duration(Math.pow(c[1],len)/rate)})); });
       tbl.appendChild(tr);
@@ -299,34 +318,46 @@ onmessage=function(ev){
 
     wrap.appendChild(el("div",{class:"callout info",html:
       "<b>わかること：</b> パスワードは<b>長さ</b>がいちばん効きます。1文字増やすだけで総当たりの手間が文字種の倍数（小文字なら26倍）にふくれ上がるからです。"}));
+
     wrap.appendChild(el("h3",{text:"ソルト（salt）という工夫"}));
     wrap.appendChild(el("p",{html:
       term("ソルト","各パスワードにつける使い捨ての追加文字列。保存するハッシュをユーザーごとに変える")+
       "を足すと、同じパスワードでも人によって指紋が変わり、「指紋表を作りだめして一気に照合する攻撃（レインボーテーブル）」が効かなくなります。"}));
     var saltDemo=el("div",{class:"mono-box"});
     Promise.all([CL.crypto.sha256Hex("password"),CL.crypto.sha256Hex("x7q!password")]).then(function(r){
-      saltDemo.innerHTML="SHA-256(\"password\")        = "+r[0].slice(0,24)+"…<br>"+
-                         "SHA-256(\"x7q!\"＋\"password\") = "+r[1].slice(0,24)+"…　←ソルトで別物に";
+      saltDemo.innerHTML="SHA-256(\"password\")        = "+r[0].slice(0,24)+"…<br>SHA-256(\"x7q!\"＋\"password\") = "+r[1].slice(0,24)+"…　←ソルトで別物に";
     });
     wrap.appendChild(saltDemo);
-    wrap.appendChild(el("p",{class:"tiny muted",text:
-      "補足：本物のシステムは、わざと計算の遅いハッシュ（bcrypt / Argon2 など）を使い、総当たりをさらに遅くしています。"}));
+
+    wrap.appendChild(details("実生活でのパスワードの守り方", function(b){
+      b.appendChild(el("p",{html:
+        "・<b>短く複雑</b>より<b>長く覚えやすい</b>：記号まじりの8文字より、無関係な単語を4つつなげた長い“パスフレーズ”のほうが強いことが多い。<br>"+
+        "・<b>使い回さない</b>：1か所漏れると、同じパスワードの他のサイトも破られる。<br>"+
+        "・<b>パスワード管理ツール</b>を使えば、サイトごとに長くてバラバラなパスワードを覚えなくてよい。<br>"+
+        "・<b>二段階認証（2FA）</b>：パスワードが漏れても、もう1つの確認で守れる。"}));
+      b.appendChild(el("p",{class:"tiny muted",text:
+        "補足：本物のシステムは、わざと計算の遅いハッシュ（bcrypt / Argon2 など）を使い、総当たりをさらに遅くしています。"}));
+    }));
     return wrap;
   }
 
   CL.route("stage3",{
     title:"Stage 3 ハッシュとパスワード",
     render:function(view){
+      var ps=CL.pstate("stage3"); var state=ps.get()||{};
+      function save(){ ps.set(state); }
       view.appendChild(el("p",{class:"eyebrow",text:"STAGE 3 ／ ハッシュ関数"}));
       view.appendChild(el("h1",{class:"page-title",text:"ハッシュとパスワードを破る"}));
       view.appendChild(el("p",{class:"page-lead",html:"元に戻せない“指紋”＝ハッシュ。それでも<b>弱いパスワードは総当たりで割れる</b>ことを体験します。"}));
+      view.appendChild(CL.ui.resetBar("このページをリセット",function(){ ps.clear(); CL.router.reload(); }));
       var sec=el("section",{class:"card"});
-      var see=panelSee(), brk=panelBreak(), why=panelWhy(); brk.hidden=true; why.hidden=true;
+      var see=panelSee(state,save), brk=panelBreak(state,save), why=panelWhy(); brk.hidden=true; why.hidden=true;
       var bar=CL.ui.tabBar(
         [{id:"see",label:"見る",n:"①"},{id:"break",label:"破る",n:"②"},{id:"why",label:"なぜ？",n:"③"}],
-        function(id){ see.hidden=(id!=="see"); brk.hidden=(id!=="break"); why.hidden=(id!=="why"); });
+        function(id){ see.hidden=(id!=="see"); brk.hidden=(id!=="break"); why.hidden=(id!=="why"); state.tab=id; save(); });
       sec.appendChild(bar); sec.appendChild(see); sec.appendChild(brk); sec.appendChild(why);
       view.appendChild(sec);
+      if(state.tab) bar.select(state.tab);
       view.appendChild(CL.ui.stageNav({id:"stage2",label:"Stage 2"},{id:"stage4",label:"Stage 4 ミニRSA"}));
     }
   });

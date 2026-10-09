@@ -116,6 +116,23 @@ ul.tidy li{margin:.25em 0}
 .callout.ok{border-left-color:var(--ok); background:var(--ok-weak)}
 .callout b{color:inherit}
 
+/* 折りたたみ解説 */
+details.explain{border:1px solid var(--frame); border-radius:8px; background:var(--paper); margin:14px 0; overflow:hidden}
+details.explain > summary{cursor:pointer; padding:11px 14px; font-weight:700; font-size:.95rem; color:var(--blue);
+  list-style:none; position:relative; user-select:none}
+details.explain > summary::-webkit-details-marker{display:none}
+details.explain > summary::before{content:"＋"; display:inline-block; width:1.3em; color:var(--blue); font-weight:700}
+details.explain[open] > summary::before{content:"−"}
+details.explain[open] > summary{border-bottom:1px solid var(--frame)}
+.explain-body{padding:4px 16px 14px}
+.explain-body p{font-size:.93rem}
+.explain-body h4{margin:14px 0 4px; font-size:.95rem; color:var(--ink)}
+.example-box{font-family:var(--mono); font-size:.86rem; background:#fff; border:1px solid var(--frame);
+  border-radius:6px; padding:9px 12px; margin:8px 0; line-height:1.9; overflow-x:auto}
+.kv{display:grid; grid-template-columns:auto 1fr; gap:2px 12px; font-size:.9rem; margin:8px 0}
+.kv dt{font-weight:700; color:var(--blue)}
+.kv dd{margin:0}
+
 /* ---------- タブ ---------- */
 .tabs{display:flex; gap:6px; flex-wrap:wrap; margin:4px 0 18px}
 .tab{

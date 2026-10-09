@@ -156,7 +156,6 @@
       s1.appendChild(el("h2",{text:"題目（仮）"}));
       s1.appendChild(el("p",{html:"<b>暗号解読の体験を通して情報セキュリティを学ぶ Web 教材「CryptoLab」の開発</b><br>"+
         "<span class='muted'>— 中学校技術科・高等学校「情報Ⅰ」対応 —</span>"}));
-      s1.appendChild(el("p",{class:"small muted",text:"三重大学 教育学部 技術・ものづくり教育コース／卒業研究（2026年度）"}));
       view.appendChild(s1);
 
       var s2=el("section",{class:"card"});
