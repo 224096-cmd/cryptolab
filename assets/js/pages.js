@@ -44,7 +44,7 @@
       how.appendChild(el("h2",{text:"使い方"}));
       how.appendChild(el("p",{html:"各ステージは <b>①見る → ②破る → ③なぜ</b> の順。上のタブで切り替えます。"+
         "「破る」で得た結果は「記録」ボタンで"+el("a",{href:"#/data"},["実験ノート"]).outerHTML+"にたまり、"+
-        "CSV・JSON・Markdown で書き出せます（卒論の記録用）。"}));
+        "CSV・JSON・Markdown で書き出せます。"}));
       how.appendChild(el("div",{class:"callout info",html:
         "<b>プライバシー：</b> すべての計算はあなたのブラウザの中だけで動きます。入力やハッシュがどこかへ"+
         "送信されることはありません。スマートフォンでも、一度開けばオフラインで動きます。"}));
@@ -94,7 +94,7 @@
     render:function(view){
       view.appendChild(el("p",{class:"eyebrow",text:"データ出力"}));
       view.appendChild(el("h1",{class:"page-title",text:"実験ノート"}));
-      view.appendChild(el("p",{class:"page-lead",html:"各ステージの「記録」でたまった結果の一覧です。卒論に使えるよう <b>CSV / JSON / Markdown</b> で書き出せます。"}));
+      view.appendChild(el("p",{class:"page-lead",html:"各ステージの「記録」でたまった結果の一覧です。<b>CSV / JSON / Markdown</b> で書き出せます。"}));
 
       var sec=el("section",{class:"card"});
       var summary=el("div",{class:"stats"}); sec.appendChild(summary);

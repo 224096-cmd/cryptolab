@@ -247,6 +247,15 @@
       view.appendChild(el("h1",{class:"page-title",text:"暗号を送受信する"}));
       view.appendChild(el("p",{class:"page-lead",html:"別の端末どうしで暗号を送り合って解読できます。<b>サーバーは使いません</b>——問題はリンクやコードに入れて届けます。"}));
 
+      // 保険：古いファイルがキャッシュされている等で基盤が未読込なら、赤いエラーではなく案内を出す
+      if(!codec || !C){
+        view.appendChild(el("section",{class:"card"},[
+          el("h2",{text:"ページを再読み込みしてください"}),
+          el("p",{html:"読み込みが最新になっていないようです。ブラウザを<b>強制再読み込み（Windows：Ctrl+F5）</b>してから、もう一度開いてください。"})
+        ]));
+        return;
+      }
+
       var incoming = codec.queryParam("d");
       var preload = incoming ? codec.dec(incoming) : null;
 
