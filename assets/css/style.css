@@ -85,6 +85,7 @@ nav.main a.active{color:var(--blue); background:var(--blue-weak); box-shadow:ins
 .research-banner button{font:inherit; font-size:.82rem; font-weight:700; cursor:pointer; color:#fff;
   background:var(--ok); border:1px solid var(--ok); border-radius:999px; padding:4px 14px}
 .research-banner button:hover{filter:brightness(1.08)}
+.research-banner[hidden]{display:none}  /* hidden 属性のときは確実に隠す（研究モード時のみ表示） */
 
 /* 送受信（暗号を送る・受け取る） */
 .share-box{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:8px 0}
