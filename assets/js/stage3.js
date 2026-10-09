@@ -175,11 +175,14 @@ onmessage=function(ev){
 
   /* ========================= 破る ========================= */
   function panelBreak(state, save){
+    var research=CL.mode.isResearch();
     var wrap=el("div",{class:"panel"});
     wrap.appendChild(el("p",{html:
       "ハッシュは元に戻せません。でも「あやしいパスワードを片っぱしからハッシュして、指紋が一致するか見る」なら解けます（"+
       term("辞書攻撃","よくあるパスワードの一覧を順に試す攻撃")+"・"+
       term("総当たり","考えうる文字の組合せを全部試す攻撃")+"）。弱いパスワードがいかに速く割れるかを見ます。"}));
+    wrap.appendChild(el("div",{class:"hintline",html:
+      "<b>やってみよう：</b>ねらうパスワードを決めて <b>「解読を開始」</b>。短い・ありがちなものほど一瞬で割れます。"}));
 
     var inPw=el("input",{type:"text",spellcheck:"false",autocomplete:"off",value:state.break_pw!=null?state.break_pw:"123"});
     inPw.addEventListener("input",function(){ state.break_pw=inPw.value; save(); });
@@ -197,10 +200,12 @@ onmessage=function(ev){
       el("option",{value:"abcdefghijklmnopqrstuvwxyz",text:"小文字のみ（a-z）"}),
       el("option",{value:"abcdefghijklmnopqrstuvwxyz0123456789",text:"小文字＋数字（a-z,0-9）"})
     ]);
-    if(state.break_cs) selCs.value=state.break_cs;
+    if(state.break_cs){ selCs.value=state.break_cs; if(selCs.selectedIndex<0) selCs.value="0123456789"; }
     var selLen=el("select",{});
-    for(var L=2;L<=12;L++){ selLen.appendChild(el("option",{value:String(L),text:"最大 "+L+" 文字"})); }
+    var maxLenOpt = research ? 12 : 6;   // 通常は6まで・研究は12まで
+    for(var L=2;L<=maxLenOpt;L++){ selLen.appendChild(el("option",{value:String(L),text:"最大 "+L+" 文字"})); }
     selLen.value = state.break_len ? state.break_len : "4";
+    if(selLen.selectedIndex<0) selLen.value="4";
     var chkDict=el("input",{type:"checkbox"}); chkDict.checked = state.break_dict!==false;
     wrap.appendChild(el("div",{class:"row"},[
       el("div",{class:"col"},[el("label",{class:"field",text:"ためす文字の種類"}),selCs]),
@@ -208,12 +213,27 @@ onmessage=function(ev){
     ]));
     wrap.appendChild(el("label",{class:"inline",style:"margin-top:10px;font-size:.9rem"},[chkDict," まず辞書（よくあるパスワード）をためす"]));
 
+    // 研究モード限定：使う文字を自由に指定
+    var customCs=el("input",{type:"text",class:"mono",spellcheck:"false",autocomplete:"off",placeholder:"例：abcABC0123!?",value:state.break_custom||""});
+    if(research){
+      var rblock=el("div",{class:"research-only"},[
+        el("span",{class:"rtag",text:"研究モード"}),
+        el("label",{class:"field",style:"margin-top:0",text:"使う文字を自由に指定（空欄なら上の選択を使用／2種類以上）"}),
+        customCs ]);
+      wrap.appendChild(rblock);
+      customCs.addEventListener("input",function(){ state.break_custom=customCs.value; save(); updateSpace(); });
+    }
+    function effCharset(){
+      if(research){ var c=customCs.value.replace(/\s/g,""); var u=""; for(var i=0;i<c.length;i++){ if(u.indexOf(c[i])<0) u+=c[i]; } if(u.length>=2) return u; }
+      return selCs.value;
+    }
+    function csLabel(){ var c=effCharset(); return (research && c!==selCs.value) ? ("カスタム("+c.length+"種)") : selCs.options[selCs.selectedIndex].text; }
+
     var spaceNote=el("p",{class:"tiny muted"});
     function updateSpace(){
       state.break_cs=selCs.value; state.break_len=selLen.value; state.break_dict=chkDict.checked; save();
-      var n=selCs.value.length, maxL=parseInt(selLen.value,10), total=spaceSize(n,maxL);
-      var est=total/RATE_GUESS;
-      var warn = est>60;
+      var n=effCharset().length, maxL=parseInt(selLen.value,10), total=spaceSize(n,maxL);
+      var est=total/RATE_GUESS, warn=est>60;
       spaceNote.innerHTML="この設定で試す組合せ：最大 <b>"+CL.fmt.sci(total)+"</b> 通り／"+
         "このブラウザでの目安 <b"+(warn?" style='color:#c9372c'":"")+">約 "+CL.fmt.duration(est)+"</b>"+
         (warn?"（長すぎる場合は「中止」で止められます）":"");

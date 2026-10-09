@@ -69,6 +69,48 @@ nav.main a{
 }
 nav.main a:hover{color:var(--blue); background:var(--blue-weak)}
 nav.main a.active{color:var(--blue); background:var(--blue-weak); box-shadow:inset 0 -2px 0 var(--blue)}
+#navResearch{color:var(--ok)}
+#navResearch.active{color:var(--ok); box-shadow:inset 0 -2px 0 var(--ok); background:var(--ok-weak)}
+
+/* 研究モードのカギボタン */
+.lockbtn{font:inherit; font-size:1rem; line-height:1; cursor:pointer; border:1px solid var(--frame-strong);
+  background:#fff; border-radius:999px; padding:4px 10px; margin-left:4px}
+.lockbtn:hover{border-color:var(--blue-mid); background:var(--blue-weak)}
+.lockbtn.on{border-color:var(--ok); background:var(--ok-weak)}
+
+/* 研究モード中の常時バナー（どのページからでも一般モードに戻れる） */
+.research-banner{position:sticky; top:0; z-index:19; display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  justify-content:center; background:var(--ok-weak); border-bottom:1px solid var(--ok); color:var(--ok);
+  font-size:.86rem; font-weight:700; padding:7px 14px}
+.research-banner button{font:inherit; font-size:.82rem; font-weight:700; cursor:pointer; color:#fff;
+  background:var(--ok); border:1px solid var(--ok); border-radius:999px; padding:4px 14px}
+.research-banner button:hover{filter:brightness(1.08)}
+
+/* 送受信（暗号を送る・受け取る） */
+.share-box{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:8px 0}
+.share-box input{flex:1 1 220px; font-family:var(--mono); font-size:.82rem}
+.qr-host{display:flex; justify-content:center; margin:14px 0}
+.qr-host canvas, .qr-host img, .qr-host svg{image-rendering:pixelated; width:200px; height:200px; border:8px solid #fff; background:#fff; border-radius:6px; box-shadow:0 1px 0 rgba(39,48,63,.08)}
+.recv-type{display:inline-block; font-size:.74rem; font-weight:700; color:var(--blue); background:var(--blue-weak); border:1px solid var(--blue-mid); border-radius:4px; padding:1px 8px}
+
+/* 研究モード限定で表示する要素（通常モードでは隠す） */
+.research-only{display:none}
+body[data-mode="research"] .research-only{display:block}
+.research-note{border:1px dashed var(--ok); background:var(--ok-weak); border-radius:8px; padding:3px 10px;
+  font-size:.76rem; font-weight:700; color:var(--ok); display:inline-block; margin:2px 0 8px}
+nav.main a#navResearch{color:var(--ok)}
+nav.main a#navResearch.active{color:var(--ok); background:var(--ok-weak); box-shadow:inset 0 -2px 0 var(--ok)}
+.lockbtn{font-family:var(--gothic); font-size:.95rem; line-height:1; cursor:pointer; padding:4px 9px;
+  border:1px solid var(--frame-strong); border-radius:6px; background:#fff; color:var(--faint)}
+.lockbtn:hover{border-color:var(--blue-mid); background:var(--blue-weak)}
+.lockbtn.on{border-color:var(--ok); background:var(--ok-weak)}
+/* 研究モード限定の設定ブロック */
+.research-only{border:1px dashed var(--ok); background:var(--ok-weak); border-radius:8px; padding:12px 14px; margin:12px 0}
+.research-only > .rtag{display:inline-block; font-size:.72rem; font-weight:700; color:var(--ok);
+  border:1px solid var(--ok); border-radius:4px; padding:0 7px; margin-bottom:8px; background:#fff}
+.hintline{font-size:.9rem; color:var(--blue); background:var(--blue-weak); border-radius:8px;
+  padding:8px 12px; margin:8px 0 12px; border:1px solid var(--blue-mid)}
+.hintline b{color:var(--blue)}
 
 /* ---------- レイアウト ---------- */
 .wrap{max-width:var(--maxw); margin:0 auto; padding:34px 18px 90px}

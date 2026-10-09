@@ -34,6 +34,12 @@
       });
       view.appendChild(grid);
 
+      var exch=el("section",{class:"card"});
+      exch.appendChild(el("h2",{text:"友だちと暗号を送り合う"}));
+      exch.appendChild(el("p",{html:"学んだ暗号で、<b>別の端末の友だち</b>に暗号メッセージを送り、解読し合えます。1人が<b>何人にも</b>同じ問題を出せます。"}));
+      exch.appendChild(el("div",{class:"btn-row"},[el("a",{class:"btn",href:"#/exchange"},["暗号を送る・受け取る →"])]));
+      view.appendChild(exch);
+
       var how=el("section",{class:"card"});
       how.appendChild(el("h2",{text:"使い方"}));
       how.appendChild(el("p",{html:"各ステージは <b>①見る → ②破る → ③なぜ</b> の順。上のタブで切り替えます。"+
@@ -199,8 +205,8 @@
 
       var s5=el("section",{class:"card"});
       s5.appendChild(el("h2",{text:"技術・公開方法"}));
-      s5.appendChild(el("p",{html:"HTML / CSS / JavaScript のみ（外部ライブラリ非依存）。"+
-        "重い計算は Web Worker で別スレッド実行。GitHub Pages で静的サイトとして公開。"}));
+      s5.appendChild(el("p",{html:"HTML / CSS / JavaScript のみ（QR生成の小さなMITライブラリのみ同梱、それ以外は外部ライブラリ非依存）。"+
+        "重い計算は Web Worker で別スレッド実行。端末間の受け渡しはリンク／コードで行い、サーバーは使いません。GitHub Pages で静的サイトとして公開。"}));
       s5.appendChild(el("p",{class:"small muted",html:"ソースコード： "+
         el("a",{href:"https://github.com/224096-cmd/cryptolab"},["github.com/224096-cmd/cryptolab"]).outerHTML}));
       view.appendChild(s5);
@@ -209,6 +215,87 @@
         el("a",{class:"btn ghost sm",href:"#/home"},["← ホーム"]),
         el("a",{class:"btn ghost sm",href:"#/stage1"},["Stage 1 からはじめる →"])
       ]));
+    }
+  });
+
+  /* ========================= 研究（研究モード限定） ========================= */
+  function analysisCard(title, note, points, xlabel){
+    var card=el("section",{class:"card"});
+    card.appendChild(el("h2",{text:title}));
+    card.appendChild(el("p",{class:"small muted",text:note}));
+    if(points.length<1){ card.appendChild(el("p",{class:"muted",text:"まだデータがありません。各ステージの「破る」で実験すると、ここに自動でたまります。"})); return card; }
+    var xs=points.map(function(p){return p.x;});
+    var xmin=Math.min.apply(null,xs), xmax=Math.max.apply(null,xs);
+    if(xmin===xmax){ xmin-=1; xmax+=1; }
+    var lo=Infinity,hi=-Infinity;
+    points.forEach(function(p){ var e=Math.log10(Math.max(p.y,1e-9)); if(e<lo)lo=e; if(e>hi)hi=e; });
+    lo=Math.floor(lo)-1; hi=Math.ceil(hi)+1; if(hi-lo<2) hi=lo+2;
+    var ticks=[]; var step=Math.max(1,Math.round((xmax-xmin)/6));
+    for(var t=xmin;t<=xmax;t+=step) ticks.push(t);
+    var svg=CL.chart.logLine([{cls:"series-measured", points:points.slice().sort(function(a,b){return a.x-b.x;}), dots:true}],
+      { xmin:xmin, xmax:xmax, ymin:lo, ymax:hi, xlabel:xlabel, ylabel:"所要時間", xticks:ticks });
+    card.appendChild(svg);
+    // 表
+    var tbl=el("table",{class:"data"});
+    tbl.appendChild(el("tr",{},[el("th",{text:xlabel}),el("th",{text:"所要時間"})]));
+    points.slice().sort(function(a,b){return a.x-b.x;}).forEach(function(p){
+      tbl.appendChild(el("tr",{},[el("td",{class:"mono",text:p.x}),el("td",{class:"mono",text:CL.fmt.duration(p.y)})]));
+    });
+    card.appendChild(el("div",{class:"scrollx"},[tbl]));
+    return card;
+  }
+
+  CL.route("research",{
+    title:"研究",
+    render:function(view){
+      view.appendChild(el("p",{class:"eyebrow",text:"研究モード"}));
+      view.appendChild(el("h1",{class:"page-title",text:"研究ノート・分析"}));
+      if(!CL.mode.isResearch()){
+        view.appendChild(el("section",{class:"card"},[
+          el("h2",{text:"ロックされています"}),
+          el("p",{html:"このページは研究モードでのみ利用できます。画面右上の <b>🔒</b> からパスワードを入力して解除してください。"})
+        ]));
+        return;
+      }
+      view.appendChild(el("p",{class:"page-lead",html:"各ステージの「破る」で集めた実測データをまとめて分析・書き出しできます。鍵の長さ・文字数と解読時間の関係から、<b>計算量</b>を自分のデータで確かめましょう。"}));
+
+      var all=CL.store.all();
+      var s3=all.filter(function(r){ return r.stage==="stage3" && r.event==="パスワード解読" && r.文字数!=null && r.所要秒!=null; })
+                .map(function(r){ return {x:+r.文字数, y:Math.max(+r.所要秒,1e-6)}; });
+      var s4=all.filter(function(r){ return r.stage==="stage4" && r.ビット長!=null && r.所要秒!=null; })
+                .map(function(r){ return {x:+r.ビット長, y:Math.max(+r.所要秒,1e-6)}; });
+      view.appendChild(analysisCard("パスワード解読：文字数 → 解読時間","Stage3 の「解読成功」記録から。右へ行くほど（長いほど）時間が急増します。", s3, "パスワードの文字数"));
+      view.appendChild(analysisCard("RSA解読：鍵のビット長 → 解読時間","Stage4 の素因数分解の記録から。対数グラフでほぼ直線＝指数関数的な増加です。", s4, "鍵のビット長"));
+
+      // 詳細な書き出し
+      var exp=el("section",{class:"card"});
+      exp.appendChild(el("h2",{text:"詳細データの書き出し"}));
+      exp.appendChild(el("p",{class:"small muted",text:"全ステージの記録（"+all.length+" 件）をまとめて保存します。卒論・レポートの分析用。"}));
+      var row=el("div",{class:"btn-row"});
+      row.appendChild(el("button",{class:"btn sm",text:"CSVで保存",onclick:function(){ dl("csv"); }}));
+      row.appendChild(el("button",{class:"btn sm ghost",text:"JSONで保存",onclick:function(){ dl("json"); }}));
+      row.appendChild(el("button",{class:"btn sm ghost",text:"Markdownで保存",onclick:function(){ dl("md"); }}));
+      exp.appendChild(row);
+      view.appendChild(exp);
+      function dl(kind){
+        var rows=CL.store.all(); if(!rows.length){ CL.toast("記録がありません"); return; }
+        if(kind==="csv") CL.export.download("cryptolab_log.csv", CL.export.toCSV(rows), "text/csv");
+        else if(kind==="json") CL.export.download("cryptolab_log.json", CL.export.toJSON(rows), "application/json");
+        else CL.export.download("cryptolab_log.md", CL.export.toMarkdown(rows), "text/markdown");
+      }
+
+      // 全消去
+      var dz=el("section",{class:"card"});
+      dz.appendChild(el("h2",{text:"データの全消去"}));
+      dz.appendChild(el("p",{class:"small muted",text:"各ページの途中経過と、実験ノートの記録をすべて消します（授業のリセット用）。"}));
+      dz.appendChild(el("div",{class:"btn-row"},[el("button",{class:"btn sm red",text:"すべて消去",onclick:function(){
+        if(!confirm("各ページの途中経過と実験記録を、すべて消去します。よろしいですか？")) return;
+        try{ var ks=[]; for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(k&&k.indexOf("cryptolab.state.")===0) ks.push(k); } ks.forEach(function(k){ localStorage.removeItem(k); }); }catch(e){}
+        CL.store.clear(); CL.toast("すべて消去しました"); CL.router.reload();
+      }})]));
+      view.appendChild(dz);
+
+      view.appendChild(CL.ui.stageNav({id:"data",label:"実験ノート"},{id:"home",label:"ホーム"}));
     }
   });
 })();

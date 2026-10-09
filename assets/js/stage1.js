@@ -104,6 +104,7 @@
       "シーザー暗号の鍵は <b>1〜25 の 25通り</b>しかありません（0は変化なし）。"+
       "だから「全部ためす」だけで必ず解けます。これを"+
       term("総当たり","考えられる鍵をかたっぱしから全部ためす解読法。英語でブルートフォース（brute force）")+"といいます。"}));
+    wrap.appendChild(el("div",{class:"hintline",html:"<b>やってみよう：</b>下の暗号文のまま <b>「25通りを全部ためす」</b> を押して、意味の通る行をさがしてみましょう。"}));
 
     var inC=el("textarea",{class:"mono",spellcheck:"false"});
     inC.value = state.breakCipher!=null ? state.breakCipher : DEFAULT_CIPHER;

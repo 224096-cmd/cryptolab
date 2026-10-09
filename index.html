@@ -24,11 +24,19 @@
       <a href="#/stage2">② 換字式</a>
       <a href="#/stage3">③ ハッシュ</a>
       <a href="#/stage4">④ RSA</a>
+      <a href="#/exchange">✉ 送受信</a>
       <a href="#/data">実験ノート（<span id="logCount">0</span>）</a>
       <a href="#/about">About</a>
+      <a href="#/research" id="navResearch" hidden>研究</a>
+      <button id="lockBtn" class="lockbtn" type="button" title="ロックを解除" aria-label="研究モードの切り替え">🔒</button>
     </nav>
   </div>
 </header>
+
+<div id="researchBanner" class="research-banner" hidden>
+  <span>🔬 研究モード中（高度な設定・分析が使えます）</span>
+  <button id="exitResearch" type="button">一般モードに戻る</button>
+</div>
 
 <main class="wrap">
   <div id="view" class="view"></div>
@@ -47,12 +55,15 @@
   </p>
 </noscript>
 
+<!-- QR生成（送受信のQR表示用／MITライセンス・同梱・オフライン可） -->
+<script defer src="assets/js/vendor/qrcode.js"></script>
 <!-- 読み込み順：app.js（基盤・ルーター）→ 各ステージ／ページ（ルート登録） -->
 <script defer src="assets/js/app.js"></script>
 <script defer src="assets/js/stage1.js"></script>
 <script defer src="assets/js/stage2.js"></script>
 <script defer src="assets/js/stage3.js"></script>
 <script defer src="assets/js/stage4.js"></script>
+<script defer src="assets/js/exchange.js"></script>
 <script defer src="assets/js/pages.js"></script>
 </body>
 </html>

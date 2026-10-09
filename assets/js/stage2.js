@@ -79,6 +79,7 @@
       "下の長い暗号文には英語の文章がかくれています。鍵は 4×10²⁶ 通り——でも "+
       term("頻度分析","文字の出現回数のかたよりを手がかりに置きかえを推理する解読法")+
       " で解けます。英語で一番多い文字は <b>E</b>、次に <b>T, A, O…</b>。暗号文で一番多い文字は、たぶん E です。"}));
+    wrap.appendChild(el("div",{class:"hintline",html:"<b>やってみよう：</b>まず <b>「頻度順にまず仮あて」</b> を押して、出てきた文章を手がかりに、下のマスの文字を直していきましょう。"}));
 
     wrap.appendChild(el("label",{class:"field",text:"暗号文"}));
     wrap.appendChild(el("div",{class:"mono-box",text:cipher}));
@@ -120,6 +121,22 @@
     wrap.appendChild(el("h3",{text:"今の復号結果"})); wrap.appendChild(decoded);
     var status=el("div",{style:"margin-top:10px"}); wrap.appendChild(status);
 
+    // 研究モード限定：英語らしさ（二文字組＝バイグラム）の自動スコア
+    var research=CL.mode.isResearch(), scoreEl=null;
+    var TOP_BIGRAMS=["TH","HE","IN","ER","AN","RE","ON","AT","EN","ND","TI","ES","OR","TE","OF","ED","IS","IT","AL","AR","ST","TO","NT","NG","SE","HA","AS","OU","IO","LE"];
+    if(research){
+      scoreEl=el("div",{class:"small"});
+      wrap.appendChild(el("div",{class:"research-only"},[
+        el("span",{class:"rtag",text:"研究モード"}),
+        el("div",{class:"small muted",style:"margin-bottom:4px",text:"英語でよく使う二文字組（TH, HE, IN, ER…）が、いまの復号にいくつ現れるかを自動で数えます。数が多いほど英語らしい＝正解に近い、という統計的な手がかりです。"}),
+        scoreEl ]));
+    }
+    function bigramScore(){
+      var s=""; for(var i=0;i<cipher.length;i++){ var ch=cipher[i]; s += (ch>="A"&&ch<="Z") ? (guess[ch]||" ") : " "; }
+      var hits=0; for(var j=0;j<s.length-1;j++){ var bg=s.substr(j,2); if(bg.indexOf(" ")<0 && TOP_BIGRAMS.indexOf(bg)>=0) hits++; }
+      return hits;
+    }
+
     function refresh(){
       var used={},dup={};
       for(var c in guess){ var p=guess[c]; if(used[p]) dup[p]=true; used[p]=1; }
@@ -129,6 +146,7 @@
       for(var i=0;i<cipher.length;i++){ var ch=cipher[i];
         if(ch>="A"&&ch<="Z"){ if(guess[ch]) decoded.appendChild(el("span",{class:"known",text:guess[ch]})); else decoded.appendChild(el("span",{class:"unknown",text:"·"})); }
         else decoded.appendChild(document.createTextNode(ch)); }
+      if(scoreEl) scoreEl.innerHTML="よく使う二文字組の一致：<b style='color:#1f7a4d'>"+bigramScore()+"</b> 個";
     }
     hintBtn.addEventListener("click",function(){
       var oc=AZ.split("").filter(function(L){return f[L]>0;}).sort(function(a,b){return f[b]-f[a];});

@@ -37,6 +37,7 @@ onmessage=function(ev){
   }
 };
 `;
+  CL.rsaWorkerBody = WORKER_BODY; // 研究ページでも同じ分解ワーカーを再利用
 
   function randPrimeNum(bits){ var lo=Math.pow(2,bits-1), hi=Math.pow(2,bits); for(;;){ var x=Math.floor(lo+Math.random()*(hi-lo)); x|=1; if(x<3)x=3; if(N.isPrimeSmall(x)) return x; } }
 
@@ -48,7 +49,8 @@ onmessage=function(ev){
       "。かけ算は簡単でも、"+term("素因数分解","ある数を素数のかけ算に戻すこと。大きな数ほど非常に難しい")+
       "は難しい——その“差”を安全性に使います。"}));
 
-    var primes=N.primesUpTo(320).filter(function(x){ return x>=11; });
+    var research=CL.mode.isResearch();
+    var primes=N.primesUpTo(research?997:97).filter(function(x){ return x>=11; });
     function primeSelect(def){ var s=el("select",{}); primes.forEach(function(p){ s.appendChild(el("option",{value:String(p),text:String(p),selected:p===def?"selected":null})); }); return s; }
     var selP=primeSelect(61), selQ=primeSelect(53), selE=el("select",{});
     if(state.see_p) selP.value=state.see_p;
@@ -168,10 +170,13 @@ onmessage=function(ev){
 
   /* ========================= 破る ========================= */
   function panelBreak(state, save){
+    var research=CL.mode.isResearch();
     var wrap=el("div",{class:"panel"});
     wrap.appendChild(el("p",{html:
       "公開鍵 (n, e) は誰でも見られます。もし n を"+term("素因数分解","n を p×q の形に戻す")+
       "できれば、φ(n) が分かり、秘密鍵 d が計算できて暗号が解けます。ここでは小さな n を実際に分解して破ります。"}));
+    wrap.appendChild(el("div",{class:"hintline",html:
+      "<b>やってみよう：</b>「挑戦」ボタンで鍵を用意 → <b>「素因数分解して鍵を復元」</b>を押す。コンピュータが n を割り算で分解し、秘密鍵を取り出します。"}));
 
     var inN=el("input",{type:"number",class:"mono"});
     var inE=el("input",{type:"number",class:"mono",value:"65537"});
@@ -193,14 +198,20 @@ onmessage=function(ev){
       inN.value=n; inE.value=e; inC.value=c; inN.dataset.m=m; persist();
     }
     var importBtn=el("button",{class:"btn quiet sm",text:"「見る」で作った鍵を取り込む"});
-    var chBtn=el("button",{class:"btn quiet sm",text:"約36ビットの鍵に挑戦"});
     importBtn.addEventListener("click",function(){
       if(!current.n){ CL.toast("先に「見る」で鍵を作ってください"); return; }
       inN.value=current.n; inE.value=current.e; inC.value=(current.c!=null?current.c:""); delete inN.dataset.m; persist();
       CL.toast("取り込みました（n="+current.n+"）");
     });
-    chBtn.addEventListener("click",function(){ newChallenge(36); CL.toast("新しい挑戦をつくりました"); });
-    wrap.appendChild(el("div",{class:"btn-row"},[importBtn,chBtn]));
+    var chButtons=[importBtn];
+    if(research){
+      [["約36ビットに挑戦",36],["約44ビットに挑戦",44]].forEach(function(spec){
+        chButtons.push(el("button",{class:"btn quiet sm",text:spec[0],onclick:function(){ newChallenge(spec[1]); CL.toast("新しい挑戦をつくりました（約"+spec[1]+"ビット）"); }}));
+      });
+    } else {
+      chButtons.push(el("button",{class:"btn quiet sm",text:"かんたんな鍵に挑戦",onclick:function(){ newChallenge(28); CL.toast("新しい挑戦をつくりました"); }}));
+    }
+    wrap.appendChild(el("div",{class:"btn-row"},chButtons));
 
     var runBtn=el("button",{class:"btn",text:"素因数分解して鍵を復元"});
     var stopBtn=el("button",{class:"btn red",text:"中止",disabled:"disabled"});
@@ -217,7 +228,8 @@ onmessage=function(ev){
     runBtn.addEventListener("click",function(){
       var n=parseInt(inN.value,10), e=parseInt(inE.value,10);
       if(!(n>3)){ CL.toast("n に合成数を入れてください"); return; }
-      if(n>=Math.pow(2,50)){ clear(out); out.appendChild(el("div",{class:"callout",html:"この教材の体験用には n が大きすぎます（約50ビット未満にしてください）。本物の RSA が破れないのは、まさにこの大きさのためです。"})); return; }
+      var cap=research?Math.pow(2,50):Math.pow(2,40);
+      if(n>=cap){ clear(out); out.appendChild(el("div",{class:"callout",html:"この教材の体験用には n が大きすぎます（約"+(research?50:40)+"ビット未満にしてください）。本物の RSA が破れないのは、まさにこの大きさのためです。"})); return; }
       clear(out); setStat("verdict","分解中…"); setStat("ops","0"); setStat("elapsed","0 秒"); meterBar.style.width="0%";
       runBtn.disabled=true; stopBtn.disabled=false;
       worker=CL.worker.fromBody(WORKER_BODY);
@@ -246,9 +258,9 @@ onmessage=function(ev){
       }
     }
 
-    // 復元：保存があればそれを、なければ新しい挑戦
+    // 復元：保存があればそれを、なければ新しい挑戦（通常は小さめ・研究は36ビット）
     if(state.break_n){ inN.value=state.break_n; inE.value=state.break_e||"65537"; inC.value=state.break_c||""; if(state.break_m) inN.dataset.m=state.break_m; }
-    else newChallenge(36);
+    else newChallenge(research?36:28);
 
     wrap.appendChild(details("試し割りと、本物の攻撃", function(b){
       b.appendChild(el("p",{html:"ここで使っているのは、3, 5, 7, 9… と順に割ってみる"+
@@ -263,6 +275,8 @@ onmessage=function(ev){
 
   /* ========================= なぜ破れない ========================= */
   function panelWhy(){
+    var research=CL.mode.isResearch();
+    var benchBits = research ? [16,20,24,28,32,36,40,44,48] : [16,20,24,28,32,36];
     var wrap=el("div",{class:"panel"});
     wrap.appendChild(el("p",{html:"n のビット長を少しずつ増やして、同じ素因数分解にかかる時間を実際に測ります。時間は <b>指数関数的</b>（対数グラフでまっすぐ右肩上がり）にふくれ上がります。"}));
     var runBtn=el("button",{class:"btn",text:"計算量を測る（数秒）"});
@@ -284,7 +298,7 @@ onmessage=function(ev){
       worker.onmessage=function(ev){ var m=ev.data;
         if(m.type==="point"){ points.push(m); }
         else if(m.type==="benchDone"){ worker.terminate(); if(worker._revoke)worker._revoke(); runBtn.disabled=false; runBtn.textContent="もう一度測る"; draw(); } };
-      worker.postMessage({cmd:"bench", bits:[16,20,24,28,32,36,40,44]});
+      worker.postMessage({cmd:"bench", bits:benchBits});
     });
 
     function draw(){
@@ -302,7 +316,7 @@ onmessage=function(ev){
       tbl.appendChild(el("tr",{},[el("th",{text:"ビット長"}),el("th",{text:"n"}),el("th",{text:"実測時間"})]));
       points.forEach(function(p){ tbl.appendChild(el("tr",{},[el("td",{class:"mono",text:p.bits}),el("td",{class:"mono",text:p.n}),el("td",{class:"mono",text:CL.fmt.duration(p.seconds)})])); });
       tableHost.appendChild(el("div",{class:"scrollx"},[tbl]));
-      exportWrap.style.display="flex";
+      exportWrap.style.display = research ? "flex" : "none";
 
       function yearsLog10(bits){ return (bits/2)*Math.log10(2) - Math.log10(rate) - Math.log10(3.15576e7); }
       function fmtYears(bits){ var L=yearsLog10(bits); if(L<0) return "1年未満"; if(L<4) return Math.round(Math.pow(10,L)).toLocaleString("en-US")+" 年"; return "約 10^"+Math.round(L)+" 年"; }

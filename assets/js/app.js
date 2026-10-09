@@ -175,6 +175,59 @@ CL.num = (function(){
 })();
 
 /* ------------------------------------------------------------------
+   暗号の共通処理（送受信ページと各ステージで共用）
+------------------------------------------------------------------ */
+CL.cipher = (function(){
+  var AZ="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  var EN_FREQ={A:8.2,B:1.5,C:2.8,D:4.3,E:12.7,F:2.2,G:2.0,H:6.1,I:7.0,J:0.15,K:0.77,L:4.0,M:2.4,
+    N:6.7,O:7.5,P:1.9,Q:0.095,R:6.0,S:6.3,T:9.1,U:2.8,V:0.98,W:2.4,X:0.15,Y:2.0,Z:0.074};
+  function shiftChar(ch,k){ var c=ch.charCodeAt(0);
+    if(c>=65&&c<=90)  return String.fromCharCode((c-65+k+2600)%26+65);
+    if(c>=97&&c<=122) return String.fromCharCode((c-97+k+2600)%26+97);
+    return ch; }
+  function caesar(t,k){ var o=""; for(var i=0;i<t.length;i++) o+=shiftChar(t[i],k); return o; }
+  function freq(text){ var f={},i; for(i=0;i<26;i++) f[AZ[i]]=0; var up=String(text).toUpperCase(); for(i=0;i<up.length;i++){ if(f[up[i]]!==undefined) f[up[i]]++; } return f; }
+  function chiSquare(text){
+    var c=freq(text), total=0, i; for(i=0;i<26;i++) total+=c[AZ[i]];
+    if(total===0) return 1e9;
+    var chi=0; for(i=0;i<26;i++){ var L=AZ[i], ex=total*EN_FREQ[L]/100, df=c[L]-ex; chi+=df*df/(ex||0.01); } return chi;
+  }
+  function randomKey(){ var a=AZ.split(""); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } var m={}; for(var k=0;k<26;k++) m[AZ[k]]=a[k]; return m; }
+  function applyMap(text,map){ var o=""; for(var i=0;i<text.length;i++){ var c=text[i].toUpperCase(); o+=map[c]!==undefined?map[c]:text[i]; } return o; }
+  return { AZ:AZ, EN_FREQ:EN_FREQ, caesar:caesar, freq:freq, chiSquare:chiSquare, randomKey:randomKey, applyMap:applyMap };
+})();
+
+/* ------------------------------------------------------------------
+   リンク／コードへの符号化（端末間での問題の受け渡し）
+------------------------------------------------------------------ */
+CL.codec = (function(){
+  function enc(obj){
+    var bytes=new TextEncoder().encode(JSON.stringify(obj)), bin="";
+    for(var i=0;i<bytes.length;i++) bin+=String.fromCharCode(bytes[i]);
+    return btoa(bin).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+  }
+  function dec(str){
+    try{ str=String(str).replace(/-/g,"+").replace(/_/g,"/"); while(str.length%4) str+="=";
+      var bin=atob(str), b=new Uint8Array(bin.length); for(var i=0;i<bin.length;i++) b[i]=bin.charCodeAt(i);
+      return JSON.parse(new TextDecoder().decode(b)); }catch(e){ return null; }
+  }
+  function queryParam(name){
+    var h=location.hash||""; var qi=h.indexOf("?"); if(qi<0) return null;
+    var qs=h.slice(qi+1).split("&");
+    for(var i=0;i<qs.length;i++){ var kv=qs[i].split("="); if(decodeURIComponent(kv[0])===name) return decodeURIComponent(kv[1]||""); }
+    return null;
+  }
+  function baseUrl(){ return location.origin + location.pathname; }
+  // 入力が完全なURLでも生コードでも、payload文字列を取り出す
+  function extract(input){
+    input=String(input||"").trim(); if(!input) return "";
+    var m=input.match(/[?&]d=([^&\s]+)/); if(m) return m[1];
+    return input.replace(/^.*#\/?[a-z]*\??/i,"").replace(/^d=/,"");
+  }
+  return { enc:enc, dec:dec, queryParam:queryParam, baseUrl:baseUrl, extract:extract };
+})();
+
+/* ------------------------------------------------------------------
    ページ単位の状態保存（localStorage）
    各ステージの入力・途中経過をページを離れても保持する。
    「リセット」ボタンを押すまで消えない。
@@ -187,6 +240,21 @@ CL.pstate = function(name){
     clear: function(){ try{ localStorage.removeItem(KEY); }catch(e){} }
   };
 };
+
+/* ------------------------------------------------------------------
+   モード（通常／研究）。研究モードはパスワードで解除。
+   通常は授業向けにやさしく、研究モードでは高度な設定が開く。
+------------------------------------------------------------------ */
+CL.mode = (function(){
+  var KEY="cryptolab.research", PW="224096", listeners=[];
+  function isResearch(){ try{ return localStorage.getItem(KEY)==="1"; }catch(e){ return false; } }
+  function setR(v){ try{ if(v) localStorage.setItem(KEY,"1"); else localStorage.removeItem(KEY); }catch(e){} notify(); }
+  function unlock(pw){ if(String(pw)===PW){ setR(true); return true; } return false; }
+  function lock(){ setR(false); }
+  function onChange(fn){ listeners.push(fn); }
+  function notify(){ listeners.forEach(function(f){ try{ f(); }catch(e){} }); }
+  return { isResearch:isResearch, unlock:unlock, lock:lock, onChange:onChange };
+})();
 
 /* ------------------------------------------------------------------
    実験ログの保管（localStorage に自動保存）
@@ -268,6 +336,29 @@ CL.export = (function(){
     return Promise.reject();
   }
   return { toCSV:toCSV, toJSON:toJSON, toMarkdown:toMarkdown, download:download, copy:copy };
+})();
+
+/* ------------------------------------------------------------------
+   モード切替：一般（授業用）/ 研究（パスワードで解錠）
+   パスワードは平文で持たず、SHA-256 のハッシュ値で照合する。
+------------------------------------------------------------------ */
+CL.mode = (function(){
+  var KEY="cryptolab.mode";
+  var PW_HASH="bc7bca63a14c7cc1bb2ecd7774fb2ef713ae25d046c9b63d90a169052a49b3ab";
+  var listeners=[];
+  function get(){ try{ return localStorage.getItem(KEY)==="research" ? "research" : "learn"; }catch(e){ return "learn"; } }
+  function isResearch(){ return get()==="research"; }
+  function apply(){ try{ document.body.setAttribute("data-mode", get()); }catch(e){} }
+  function setLearn(){ try{ localStorage.setItem(KEY,"learn"); }catch(e){} apply(); notify(); }
+  function unlock(pw){
+    return CL.crypto.sha256Hex(String(pw)).then(function(h){
+      if(h===PW_HASH){ try{ localStorage.setItem(KEY,"research"); }catch(e){} apply(); notify(); return true; }
+      return false;
+    });
+  }
+  function onChange(fn){ listeners.push(fn); }
+  function notify(){ listeners.forEach(function(f){ try{ f(get()); }catch(e){} }); }
+  return { get:get, isResearch:isResearch, apply:apply, setLearn:setLearn, unlock:unlock, onChange:onChange };
 })();
 
 /* ------------------------------------------------------------------
@@ -464,4 +555,30 @@ document.addEventListener("DOMContentLoaded", function(){
     if(b) b.textContent = CL.store.count();
   }
   CL.store.onChange(updateBadge); updateBadge();
+
+  // 研究モードのロック／解除（ヘッダーのカギボタン＋常時バナー）
+  var lockBtn=document.getElementById("lockBtn");
+  var navResearch=document.getElementById("navResearch");
+  var banner=document.getElementById("researchBanner");
+  var exitBtn=document.getElementById("exitResearch");
+  function applyMode(){
+    var r=CL.mode.isResearch();
+    if(lockBtn){ lockBtn.textContent=r?"🔬":"🔒"; lockBtn.classList.toggle("on",r);
+      lockBtn.title=r?"研究モード：オン（クリックで終了）":"研究モードのロックを解除"; }
+    if(navResearch) navResearch.hidden=!r;
+    if(banner) banner.hidden=!r;
+  }
+  if(lockBtn){
+    lockBtn.addEventListener("click",function(){
+      if(CL.mode.isResearch()){
+        if(confirm("研究モードを終了して、授業用（通常）モードに戻しますか？")) CL.mode.setLearn();
+      } else {
+        var pw=prompt("研究モードのパスワードを入力してください"); if(pw==null) return;
+        CL.mode.unlock(pw).then(function(ok){ CL.toast(ok?"研究モードを有効にしました":"パスワードが違います"); });
+      }
+    });
+  }
+  if(exitBtn){ exitBtn.addEventListener("click",function(){ CL.mode.setLearn(); CL.toast("一般モードに戻りました"); }); }
+  CL.mode.onChange(function(){ applyMode(); CL.router.reload(); });
+  CL.mode.apply(); applyMode();
 });
